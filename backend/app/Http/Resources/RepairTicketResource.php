@@ -33,6 +33,14 @@ class RepairTicketResource extends JsonResource
                 'name' => $this->department->name,
             ]),
 
+            'assignee' => $this->whenLoaded('assignee', fn () => [
+                'id' => $this->assignee->id,
+                'name' => $this->assignee->name,
+            ]),
+
+            'first_started_at' => $this->first_started_at?->toISOString(),
+            'resolved_at' => $this->resolved_at?->toISOString(),
+            'cancelled_at' => $this->cancelled_at?->toISOString(),
             'created_at' => $this->created_at?->toISOString(),
             'updated_at' => $this->updated_at?->toISOString(),
         ];

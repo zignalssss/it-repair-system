@@ -2,8 +2,8 @@
 
 namespace App\Http\Requests\Tickets;
 
-use App\Enums\UserRole;
 use App\Models\User;
+use App\Models\RepairTicket;
 use Illuminate\Foundation\Http\FormRequest;
 
 class StoreRepairTicketRequest extends FormRequest
@@ -12,13 +12,8 @@ class StoreRepairTicketRequest extends FormRequest
     {
         $user = $this->user();
 
-        if (! ($user instanceof User)) {
-            return false;
-        }
-
-        return $user->is_active
-            && $user->role === UserRole::User
-            && $user->department?->is_active === true;
+        return $user instanceof User
+            && $user->can('create', RepairTicket::class);
     }
 
     public function rules(): array

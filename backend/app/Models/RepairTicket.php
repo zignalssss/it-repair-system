@@ -5,6 +5,8 @@ namespace App\Models;
 use App\Enums\SupportLevel;
 use App\Enums\TicketPriority;
 use App\Enums\TicketStatus;
+use App\Enums\UserRole;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -35,6 +37,51 @@ class RepairTicket extends Model
             'resolved_at' => 'datetime',
             'cancelled_at' => 'datetime',
         ];
+    }
+
+    public function scopeVisibleTo(Builder $query, User $user): void
+    {
+        if (! $user->is_active) {
+            $query->whereRaw('1 = 0');
+            return;
+        }
+
+        switch ($user->role) {
+            case UserRole::User:
+                if ($user->department_id === null) {
+                    $query->whereRaw('1 = 0');
+                    return;
+                }
+                $query->where('department_id', $user->department_id);
+                return;
+
+            case UserRole::JuniorTechnician:
+                $query->where(function (Builder $visible) use ($user) {
+                    $visible->where('assignee_id', $user->id)
+                        ->orWhere(function (Builder $queue) {
+                            $queue->whereNull('assignee_id')
+                                ->where(
+                                    'support_level',
+                                    SupportLevel::Junior->value,
+                                )
+                                ->whereIn('status', [
+                                    TicketStatus::New->value,
+                                    TicketStatus::Returned->value,
+                                ]);
+                        });
+                });
+                return;
+
+            case UserRole::SeniorTechnician:
+                $query->where(function (Builder $visible) use ($user) {
+                    $visible->where('assignee_id', $user->id)
+                        ->orWhereNotNull('first_escalated_at');
+                });
+                return;
+
+            case UserRole::ITManager:
+                return;
+        }
     }
 
     public function requester(): BelongsTo
