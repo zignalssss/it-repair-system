@@ -1,0 +1,50 @@
+<?php
+
+namespace App\Models;
+
+use App\Enums\SupportLevel;
+use App\Enums\TicketStatus;
+use App\Enums\UserRole;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+
+class TicketEvent extends Model
+{
+    public const UPDATED_AT = null;
+
+    protected $fillable = [
+        'actor_id',
+        'actor_role',
+        'type',
+        'audience',
+        'from_status',
+        'to_status',
+        'from_level',
+        'to_level',
+        'from_assignee_id',
+        'to_assignee_id',
+        'metadata',
+    ];
+
+    protected function casts(): array
+    {
+        return [
+            'actor_role' => UserRole::class,
+            'from_status' => TicketStatus::class,
+            'to_status' => TicketStatus::class,
+            'from_level' => SupportLevel::class,
+            'to_level' => SupportLevel::class,
+            'metadata' => 'array',
+        ];
+    }
+
+    public function ticket(): BelongsTo
+    {
+        return $this->belongsTo(RepairTicket::class, 'ticket_id');
+    }
+
+    public function actor(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'actor_id');
+    }
+}

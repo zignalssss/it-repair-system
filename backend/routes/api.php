@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Auth\AuthController;
+use App\Http\Controllers\RepairTicketController;
 use App\Http\Middleware\EnsureUserIsActive;
 use Illuminate\Support\Facades\Route;
 
@@ -18,7 +19,8 @@ Route::prefix('v1')->group(function () {
     Route::middleware('auth:sanctum')->group(function () {
         Route::get('/me', [AuthController::class, 'me'])
             ->middleware(EnsureUserIsActive::class);
-
         Route::post('/logout', [AuthController::class, 'logout']);
+        Route::post('/tickets', [RepairTicketController::class, 'store'])
+            ->middleware(EnsureUserIsActive::class);
     });
 });

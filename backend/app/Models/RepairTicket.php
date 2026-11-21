@@ -6,6 +6,7 @@ use App\Enums\SupportLevel;
 use App\Enums\TicketPriority;
 use App\Enums\TicketStatus;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class RepairTicket extends Model
@@ -54,5 +55,10 @@ class RepairTicket extends Model
     public function resolvedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'resolved_by_id');
+    }
+
+    public function events(): HasMany
+    {
+        return $this->hasMany(TicketEvent::class, 'ticket_id');
     }
 }

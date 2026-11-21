@@ -10,7 +10,6 @@ class LoginRequest extends FormRequest
     {
         return true;
     }
-     // define the validation rules for the login request before controller
 
     public function rules(): array
     {  
