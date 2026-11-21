@@ -61,76 +61,102 @@ async function submit() {
 </script>
 
 <template>
-  <main class="flex min-h-screen items-center justify-center bg-slate-100 px-4 py-12">
-    <div class="w-full max-w-sm">
-      <div class="mb-6 text-center">
-        <div
-          class="mx-auto mb-4 flex size-12 items-center justify-center rounded-xl bg-indigo-600 text-white shadow-sm"
-          aria-hidden="true"
+  <main class="grid min-h-dvh lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)]">
+    <!-- Side panel: identity + workflow, collapses to a strip on small screens -->
+    <section
+      class="relative flex flex-col justify-between overflow-hidden bg-stone-950 px-6 py-6 text-stone-100 sm:px-10 lg:py-12"
+    >
+      <div class="flex items-center gap-3">
+        <span
+          class="relative inline-flex items-center rounded-sm bg-signal-500 py-1 pr-2.5 pl-5 font-mono text-xs font-semibold tracking-wider text-stone-950"
         >
-          <svg class="size-6" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor">
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              d="M11.42 15.17 17.25 21A2.652 2.652 0 0 0 21 17.25l-5.877-5.877M11.42 15.17l2.496-3.03c.317-.384.74-.626 1.208-.766M11.42 15.17l-4.655 5.653a2.548 2.548 0 1 1-3.586-3.586l6.837-5.63m5.108-.233c.55-.164 1.163-.188 1.743-.14a4.5 4.5 0 0 0 4.486-6.336l-3.276 3.277a3.004 3.004 0 0 1-2.25-2.25l3.276-3.276a4.5 4.5 0 0 0-6.336 4.486c.091 1.076-.071 2.264-.904 2.95l-.102.085"
-            />
-          </svg>
-        </div>
-        <h1 class="text-2xl font-semibold text-slate-900">เข้าสู่ระบบแจ้งซ่อม</h1>
+          <span class="absolute left-1.5 size-1.5 rounded-full bg-stone-950" aria-hidden="true"></span>
+          IT
+        </span>
+        <span class="text-sm font-medium text-stone-300">ระบบแจ้งซ่อม</span>
       </div>
 
-      <div class="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 sm:p-8">
+      <div class="hidden lg:block">
+        <p class="max-w-sm text-4xl leading-tight font-semibold text-balance text-white">
+          อุปกรณ์มีปัญหา แจ้งทีมไอทีได้ที่นี่
+        </p>
+
+        <ol class="mt-10 max-w-sm border-t border-stone-800">
+          <li class="flex items-baseline gap-5 border-b border-stone-800 py-4">
+            <span class="font-mono text-xs text-signal-500">01</span>
+            <span class="text-stone-300">พนักงานแจ้งปัญหา</span>
+          </li>
+          <li class="flex items-baseline gap-5 border-b border-stone-800 py-4">
+            <span class="font-mono text-xs text-signal-500">02</span>
+            <span class="text-stone-300">ช่างไอทีรับเรื่องและดำเนินการ</span>
+          </li>
+          <li class="flex items-baseline gap-5 border-b border-stone-800 py-4">
+            <span class="font-mono text-xs text-signal-500">03</span>
+            <span class="text-stone-300">ติดตามสถานะจนปิดงาน</span>
+          </li>
+        </ol>
+      </div>
+
+      <p class="hidden font-mono text-xs text-stone-500 lg:block">สำหรับพนักงานและทีมไอทีภายในองค์กร</p>
+    </section>
+
+    <!-- Form -->
+    <section class="flex items-center justify-center px-4 py-12 sm:px-10">
+      <div class="w-full max-w-sm">
+        <h1 class="text-2xl font-semibold text-stone-950">เข้าสู่ระบบแจ้งซ่อม</h1>
+        <p class="mt-1.5 text-sm text-stone-500">ใช้อีเมลและรหัสผ่านที่องค์กรออกให้</p>
+
         <p
           v-if="connectionMessage"
           role="status"
-          class="mb-5 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800 ring-1 ring-amber-200"
+          class="mt-6 border-l-2 border-signal-500 bg-signal-50 px-3 py-2.5 text-sm text-signal-700"
         >
           {{ connectionMessage }}
         </p>
 
-        <form @submit.prevent="submit">
+        <form class="mt-8" @submit.prevent="submit">
           <fieldset :disabled="submitting" class="space-y-5">
             <div>
-              <label for="email" class="mb-1.5 block text-sm font-medium text-slate-700">อีเมล</label>
+              <label for="email" class="mb-1.5 block text-sm font-medium text-stone-800">อีเมล</label>
               <input
                 id="email"
                 v-model="email"
                 type="email"
                 autocomplete="username"
                 required
-                class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-base text-slate-900 shadow-xs placeholder:text-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30 focus:outline-none disabled:bg-slate-50 disabled:text-slate-500 sm:text-sm"
+                class="block h-11 w-full rounded-md border border-stone-300 bg-white px-3 text-base text-stone-950 transition-colors outline-none hover:border-stone-400 focus:border-stone-950 focus:ring-3 focus:ring-signal-500/35 disabled:bg-stone-50 disabled:text-stone-500 sm:text-sm"
               />
             </div>
 
             <div>
-              <label for="password" class="mb-1.5 block text-sm font-medium text-slate-700">รหัสผ่าน</label>
+              <label for="password" class="mb-1.5 block text-sm font-medium text-stone-800">รหัสผ่าน</label>
               <input
                 id="password"
                 v-model="password"
                 type="password"
                 autocomplete="current-password"
                 required
-                class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-base text-slate-900 shadow-xs placeholder:text-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30 focus:outline-none disabled:bg-slate-50 disabled:text-slate-500 sm:text-sm"
+                class="block h-11 w-full rounded-md border border-stone-300 bg-white px-3 text-base text-stone-950 transition-colors outline-none hover:border-stone-400 focus:border-stone-950 focus:ring-3 focus:ring-signal-500/35 disabled:bg-stone-50 disabled:text-stone-500 sm:text-sm"
               />
             </div>
 
             <p
               v-if="errorMessage"
               role="alert"
-              class="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700 ring-1 ring-red-200"
+              class="border-l-2 border-red-600 bg-red-50 px-3 py-2.5 text-sm text-red-800"
             >
               {{ errorMessage }}
             </p>
 
             <button
               type="submit"
-              class="w-full rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-indigo-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:cursor-not-allowed disabled:bg-indigo-400"
+              class="h-11 w-full rounded-md bg-stone-950 px-4 text-sm font-semibold text-white transition-colors hover:bg-stone-800 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-signal-500/60 active:bg-stone-900 disabled:cursor-wait disabled:bg-stone-600"
             >
               {{ submitting ? 'กำลังเข้าสู่ระบบ...' : 'เข้าสู่ระบบ' }}
             </button>
           </fieldset>
         </form>
       </div>
-    </div>
+    </section>
   </main>
 </template>

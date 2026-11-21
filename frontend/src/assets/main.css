@@ -1,1 +1,20 @@
 @import "tailwindcss";
+
+@theme {
+  --font-sans: "IBM Plex Sans Thai", "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+
+  /* signal orange: the one accent, used like a maintenance tag */
+  --color-signal-50: oklch(0.97 0.02 55);
+  --color-signal-200: oklch(0.88 0.08 52);
+  --color-signal-500: oklch(0.68 0.18 45);
+  --color-signal-600: oklch(0.6 0.18 42);
+  --color-signal-700: oklch(0.5 0.15 40);
+}
+
+body {
+  background-color: var(--color-stone-100);
+  color: var(--color-stone-900);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}

@@ -27,14 +27,22 @@ async function handleLogout() {
 </script>
 
 <template>
-  <main v-if="auth.user" class="min-h-screen bg-slate-100">
-    <header class="border-b border-slate-200 bg-white">
-      <div class="mx-auto flex max-w-4xl items-center justify-between gap-4 px-4 py-4">
-        <h1 class="text-lg font-semibold text-slate-900">ระบบแจ้งซ่อม</h1>
+  <main v-if="auth.user" class="min-h-dvh">
+    <header class="bg-stone-950 text-stone-100">
+      <div class="mx-auto flex max-w-5xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
+        <div class="flex items-center gap-3">
+          <span
+            class="relative inline-flex items-center rounded-sm bg-signal-500 py-1 pr-2.5 pl-5 font-mono text-xs font-semibold tracking-wider text-stone-950"
+          >
+            <span class="absolute left-1.5 size-1.5 rounded-full bg-stone-950" aria-hidden="true"></span>
+            IT
+          </span>
+          <h1 class="text-sm font-medium text-stone-200">ระบบแจ้งซ่อม</h1>
+        </div>
 
         <button
           :disabled="loggingOut"
-          class="rounded-lg px-3 py-2 text-sm font-medium text-slate-700 ring-1 ring-slate-300 transition-colors hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:cursor-not-allowed disabled:opacity-60"
+          class="h-9 rounded-md px-3 text-sm font-medium text-stone-300 ring-1 ring-stone-700 transition-colors hover:bg-stone-800 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal-500 disabled:cursor-wait disabled:opacity-60"
           @click="handleLogout"
         >
           {{ loggingOut ? 'กำลังออกจากระบบ...' : 'ออกจากระบบ' }}
@@ -42,41 +50,50 @@ async function handleLogout() {
       </div>
     </header>
 
-    <div class="mx-auto max-w-4xl px-4 py-8">
+    <div class="mx-auto max-w-5xl px-4 py-10 sm:px-6 sm:py-14">
       <p
         v-if="errorMessage"
         role="alert"
-        class="mb-6 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700 ring-1 ring-red-200"
+        class="mb-8 border-l-2 border-red-600 bg-red-50 px-3 py-2.5 text-sm text-red-800"
       >
         {{ errorMessage }}
       </p>
 
-      <section class="rounded-2xl bg-white shadow-sm ring-1 ring-slate-200">
-        <dl class="divide-y divide-slate-100">
-          <div class="grid gap-1 px-6 py-4 sm:grid-cols-3 sm:gap-4">
-            <dt class="text-sm font-medium text-slate-500">ชื่อ</dt>
-            <dd class="text-sm text-slate-900 sm:col-span-2">{{ auth.user.name }}</dd>
+      <p class="text-sm text-stone-500">สวัสดี</p>
+      <p class="mt-1 text-3xl font-semibold break-words text-stone-950 sm:text-4xl">{{ auth.user.name }}</p>
+
+      <!-- Account card, styled as a maintenance tag -->
+      <section class="mt-10 max-w-xl overflow-hidden rounded-lg bg-white ring-1 ring-stone-200" aria-label="ข้อมูลบัญชี">
+        <div class="flex items-center gap-2 border-b border-dashed border-stone-300 px-5 py-3">
+          <span class="size-2 rounded-full bg-signal-500 ring-2 ring-signal-200" aria-hidden="true"></span>
+          <span class="text-xs font-medium text-stone-500">ข้อมูลบัญชี</span>
+        </div>
+
+        <dl class="divide-y divide-stone-100">
+          <div class="grid gap-1 px-5 py-4 sm:grid-cols-[8rem_1fr] sm:gap-4">
+            <dt class="text-sm text-stone-500">ชื่อ</dt>
+            <dd class="text-sm font-medium break-words text-stone-950">{{ auth.user.name }}</dd>
           </div>
 
-          <div class="grid gap-1 px-6 py-4 sm:grid-cols-3 sm:gap-4">
-            <dt class="text-sm font-medium text-slate-500">อีเมล</dt>
-            <dd class="break-all text-sm text-slate-900 sm:col-span-2">{{ auth.user.email }}</dd>
+          <div class="grid gap-1 px-5 py-4 sm:grid-cols-[8rem_1fr] sm:gap-4">
+            <dt class="text-sm text-stone-500">อีเมล</dt>
+            <dd class="font-mono text-sm break-all text-stone-950">{{ auth.user.email }}</dd>
           </div>
 
-          <div class="grid gap-1 px-6 py-4 sm:grid-cols-3 sm:gap-4">
-            <dt class="text-sm font-medium text-slate-500">บทบาท</dt>
-            <dd class="sm:col-span-2">
+          <div class="grid gap-1 px-5 py-4 sm:grid-cols-[8rem_1fr] sm:gap-4">
+            <dt class="text-sm text-stone-500">บทบาท</dt>
+            <dd>
               <span
-                class="inline-flex rounded-full bg-indigo-50 px-2.5 py-0.5 text-xs font-medium text-indigo-700 ring-1 ring-indigo-200"
+                class="inline-flex rounded-sm bg-signal-50 px-2 py-0.5 font-mono text-xs font-semibold text-signal-700 ring-1 ring-signal-200"
               >
                 {{ auth.user.role }}
               </span>
             </dd>
           </div>
 
-          <div class="grid gap-1 px-6 py-4 sm:grid-cols-3 sm:gap-4">
-            <dt class="text-sm font-medium text-slate-500">แผนก</dt>
-            <dd class="text-sm text-slate-900 sm:col-span-2">
+          <div class="grid gap-1 px-5 py-4 sm:grid-cols-[8rem_1fr] sm:gap-4">
+            <dt class="text-sm text-stone-500">แผนก</dt>
+            <dd class="text-sm font-medium text-stone-950">
               {{ auth.user.department?.name ?? 'ไม่มีแผนก' }}
             </dd>
           </div>
