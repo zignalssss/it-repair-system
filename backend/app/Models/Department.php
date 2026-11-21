@@ -24,4 +24,8 @@ class Department extends Model
     {
         return $this->hasMany(User::class);
     }
+    public function repairTickets(): HasMany
+    {
+    return $this->hasMany(RepairTicket::class);
+    }
 }
