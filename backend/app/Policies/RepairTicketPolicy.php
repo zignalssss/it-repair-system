@@ -119,5 +119,34 @@ class RepairTicketPolicy
         return $user->is_active
             && $user->role === UserRole::ITManager;
     }
+
+    public function requestEquipment(User $user, RepairTicket $ticket): bool
+{
+    return $this->isAssignedTechnician($user, $ticket)
+        && $user->role === UserRole::SeniorTechnician
+        && $ticket->support_level === SupportLevel::Senior;
+}
+
+    public function decideEquipment(User $user, RepairTicket $ticket): bool
+    {
+        return $this->isManager($user);
+    }
+
+    public function viewEquipmentRequests(User $user,RepairTicket $ticket,): bool {
+        if (! $user->is_active) {
+            return false;
+        }
+
+        if (in_array($user->role, [
+            UserRole::ITManager,
+            UserRole::SeniorTechnician,
+        ], true)) {
+            return true;
+        }
+
+        return $user->role === UserRole::JuniorTechnician
+            && $ticket->assignee_id !== null
+            && (int) $ticket->assignee_id === (int) $user->id;
+    }
 }
 

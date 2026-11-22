@@ -1,0 +1,30 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+
+class EquipmentRequestItem extends Model
+{
+    public $timestamps = false;
+
+    protected $fillable = [
+        'name',
+        'quantity',
+        'estimated_unit_price',
+    ];
+
+    protected function casts(): array
+    {
+        return [
+            'quantity' => 'integer',
+            'estimated_unit_price' => 'decimal:2',
+        ];
+    }
+
+    public function equipmentRequest(): BelongsTo
+    {
+        return $this->belongsTo(EquipmentRequest::class);
+    }
+}

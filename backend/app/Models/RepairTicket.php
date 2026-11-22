@@ -125,4 +125,9 @@ class RepairTicket extends Model
         return $this->hasOne(InformationRequest::class, 'ticket_id')
             ->whereNull('responded_at');
     }
+
+    public function equipmentRequests(): HasMany
+    {
+        return $this->hasMany(EquipmentRequest::class, 'ticket_id');
+    }
 }

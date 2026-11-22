@@ -26,6 +26,7 @@ class TicketEvent extends Model
         'note_id',
         'metadata',
         'information_request_id',
+        'equipment_request_id',
     ];
 
     protected function casts(): array
@@ -58,5 +59,10 @@ class TicketEvent extends Model
     public function informationRequest(): BelongsTo
     {
         return $this->belongsTo(InformationRequest::class,'information_request_id');
+    }
+
+    public function equipmentRequest(): BelongsTo
+    {
+        return $this->belongsTo(EquipmentRequest::class,'equipment_request_id',);
     }
 }

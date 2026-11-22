@@ -4,6 +4,7 @@ use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\RepairTicketController;
 use App\Http\Controllers\AttachmentController;
 use App\Http\Middleware\EnsureUserIsActive;
+use App\Http\Controllers\EquipmentRequestController;
 use App\Http\Controllers\TicketManagementController;
 use Illuminate\Support\Facades\Route;
 
@@ -55,6 +56,12 @@ Route::prefix('v1')->group(function () {
             Route::patch('/tickets/{ticket}/assignment', [TicketManagementController::class,'assign',]);
 
             Route::patch('/tickets/{ticket}/priority', [TicketManagementController::class,'updatePriority',]);
+
+            Route::get('/tickets/{ticket}/equipment-requests', [EquipmentRequestController::class,'index',]);
+
+            Route::post('/tickets/{ticket}/equipment-requests', [EquipmentRequestController::class,'store',]);
+
+            Route::post('/tickets/{ticket}/equipment-requests/{equipmentRequest}/decision',[EquipmentRequestController::class,'decide',],);
         });
     });
 });
