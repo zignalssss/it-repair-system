@@ -44,6 +44,10 @@ Route::prefix('v1')->group(function () {
             Route::get('/tickets/{ticket}/notes', [RepairTicketController::class,'notes',]);
 
             Route::get('/attachments/{attachment}/download', [AttachmentController::class,'download',])->name('attachments.download');
+
+            Route::post('/tickets/{ticket}/escalate', [RepairTicketController::class,'escalate',]);
+
+            Route::post('/tickets/{ticket}/return-to-junior', [RepairTicketController::class,'returnToJunior',]);
         });
     });
 });

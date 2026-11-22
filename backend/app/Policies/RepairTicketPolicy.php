@@ -84,5 +84,19 @@ class RepairTicketPolicy
             && $ticket->assignee_id !== null
             && (int) $ticket->assignee_id === (int) $user->id;
     }
+
+    public function escalate(User $user, RepairTicket $ticket): bool
+    {
+        return $this->isAssignedTechnician($user, $ticket)
+            && $user->role === UserRole::JuniorTechnician
+            && $ticket->support_level === SupportLevel::Junior;
+    }
+
+    public function returnToJunior(User $user, RepairTicket $ticket): bool
+    {
+        return $this->isAssignedTechnician($user, $ticket)
+            && $user->role === UserRole::SeniorTechnician
+            && $ticket->support_level === SupportLevel::Senior;
+    }
 }
 

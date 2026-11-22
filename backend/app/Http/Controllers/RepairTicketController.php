@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\SupportLevel;
 
 use App\Actions\RepairTickets\CancelRepairTicket;
 use App\Actions\RepairTickets\ClaimRepairTicket;
@@ -9,11 +10,13 @@ use App\Actions\RepairTickets\RequestTicketInformation;
 use App\Actions\RepairTickets\RespondTicketInformation;
 use App\Actions\RepairTickets\CreateRepairTicket;
 use App\Actions\RepairTickets\AddWorkLog;
+use App\Actions\RepairTickets\TransferRepairTicket;
 
 use App\Models\InformationRequest;
 use App\Models\RepairTicket;
 use App\Models\User;
 
+use App\Http\Requests\Tickets\HandoffRepairTicketRequest;
 use App\Http\Requests\Tickets\InformationMessageRequest;
 use App\Http\Requests\Tickets\CancelRepairTicketRequest;
 use App\Http\Requests\Tickets\IndexRepairTicketRequest;
@@ -42,9 +45,17 @@ class RepairTicketController extends Controller
             abort(401, 'Unauthenticated.');
         }
 
+        $data = $request->safe()->only([
+            'title',
+            'description',
+            'location',
+            'asset_label',
+        ]);
+
         $ticket = $createRepairTicket->handle(
             $requester,
-            $request->validated(),
+            $data,
+            $request->file('files', []),
         );
 
         return (new RepairTicketResource($ticket))
@@ -238,6 +249,56 @@ class RepairTicketController extends Controller
             ->paginate(20);
 
         return TicketNoteResource::collection($notes);
+    }
+
+    public function escalate(
+        HandoffRepairTicketRequest $request,
+        RepairTicket $ticket,
+        TransferRepairTicket $action,
+    ): JsonResponse {
+        $actor = $request->user();
+
+        if (! ($actor instanceof User)) {
+            abort(401, 'Unauthenticated.');
+        }
+
+        $data = $request->validated();
+
+        $updatedTicket = $action->handle(
+            $actor,
+            $ticket->id,
+            SupportLevel::Senior,
+            $data['body'],
+        );
+
+        return (new RepairTicketResource($updatedTicket))
+            ->response()
+            ->setStatusCode(200);
+    }
+
+    public function returnToJunior(
+        HandoffRepairTicketRequest $request,
+        RepairTicket $ticket,
+        TransferRepairTicket $action,
+    ): JsonResponse {
+        $actor = $request->user();
+
+        if (! ($actor instanceof User)) {
+            abort(401, 'Unauthenticated.');
+        }
+
+        $data = $request->validated();
+
+        $updatedTicket = $action->handle(
+            $actor,
+            $ticket->id,
+            SupportLevel::Junior,
+            $data['body'],
+        );
+
+        return (new RepairTicketResource($updatedTicket))
+            ->response()
+            ->setStatusCode(200);
     }
 
 }

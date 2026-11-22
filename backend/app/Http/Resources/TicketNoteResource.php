@@ -24,6 +24,11 @@ class TicketNoteResource extends JsonResource
                 'name' => $this->author->name,
             ]),
 
+            'attachments' => $this->whenLoaded(
+                'attachments',
+                fn () => AttachmentResource::collection($this->attachments),
+            ),
+
             'created_at' => $this->created_at?->toISOString(),
         ];
     }

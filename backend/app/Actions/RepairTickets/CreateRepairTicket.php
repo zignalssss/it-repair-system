@@ -7,42 +7,87 @@ use App\Enums\TicketPriority;
 use App\Enums\TicketStatus;
 use App\Models\RepairTicket;
 use App\Models\User;
+use App\Services\NoteAttachmentStorage;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Throwable;
 
 class CreateRepairTicket
 {
-    public function handle(User $requester, array $data): RepairTicket
-    {
-        return DB::transaction(function () use ($requester, $data) {
-            $ticket = new RepairTicket($data);
+    public function __construct(
+        private readonly NoteAttachmentStorage $attachments,
+    ) {}
 
-            $ticket->requester()->associate($requester);
-            $ticket->department_id = $requester->department_id;
-            $ticket->status = TicketStatus::New;
-            $ticket->support_level = SupportLevel::Junior;
-            $ticket->priority = TicketPriority::Normal;
+    /** @param list<UploadedFile> $files */
+    public function handle(
+        User $requester,
+        array $data,
+        array $files = [],
+    ): RepairTicket {
+        $storedPaths = [];
 
-            $ticket->save();
-            $ticket->refresh();
+        try {
+            return DB::transaction(function () use (
+                $requester,
+                $data,
+                $files,
+                &$storedPaths,
+            ) {
+                $ticket = new RepairTicket($data);
 
-            $ticket->events()->create([
-                'actor_id' => $requester->id,
-                'actor_role' => $requester->role,
-                'type' => 'created',
-                'audience' => 'requester',
-                'from_status' => null,
-                'to_status' => $ticket->status,
-                'from_level' => null,
-                'to_level' => $ticket->support_level,
-                'metadata' => [
-                    'ticket_no' => $ticket->ticket_no,
-                ],
-            ]);
+                $ticket->requester()->associate($requester);
+                $ticket->department_id = $requester->department_id;
+                $ticket->status = TicketStatus::New;
+                $ticket->support_level = SupportLevel::Junior;
+                $ticket->priority = TicketPriority::Normal;
 
-            return $ticket->load([
-                'requester',
-                'department',
-            ]);
-        });
+                $ticket->save();
+                $ticket->refresh();
+
+                $initialNote = null;
+
+                if ($files !== []) {
+                    $initialNote = $ticket->notes()->create([
+                        'author_id' => $requester->id,
+                        'author_role' => $requester->role,
+                        'kind' => 'initial',
+                        'audience' => 'requester',
+                        'body' => null,
+                    ]);
+
+                    $this->attachments->store(
+                        $initialNote,
+                        $requester,
+                        $files,
+                        $storedPaths,
+                    );
+                }
+
+                $ticket->events()->create([
+                    'actor_id' => $requester->id,
+                    'actor_role' => $requester->role,
+                    'type' => 'created',
+                    'audience' => 'requester',
+                    'from_status' => null,
+                    'to_status' => $ticket->status,
+                    'from_level' => null,
+                    'to_level' => $ticket->support_level,
+                    'note_id' => $initialNote?->id,
+                    'metadata' => [
+                        'ticket_no' => $ticket->ticket_no,
+                    ],
+                ]);
+
+                return $ticket->load([
+                    'requester',
+                    'department',
+                    'assignee',
+                ]);
+            });
+        } catch (Throwable $error) {
+            $this->attachments->cleanup($storedPaths);
+
+            throw $error;
+        }
     }
 }

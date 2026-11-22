@@ -3,18 +3,20 @@
 namespace App\Actions\RepairTickets;
 
 use App\Enums\TicketStatus;
+use App\Services\NoteAttachmentStorage;
 use App\Models\RepairTicket;
 use App\Models\User;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
-use RuntimeException;
 use Throwable;
 
 class RespondTicketInformation
 {
+    public function __construct(
+        private readonly NoteAttachmentStorage $attachments,
+    ) {}
+
     /** @param list<UploadedFile> $files */
     public function handle(
         User $actor,
@@ -45,10 +47,7 @@ class RespondTicketInformation
                     ->lockForUpdate()
                     ->findOrFail($informationRequestId);
 
-                if (
-                    $ticket->status !== TicketStatus::WaitingInfo
-                    || $informationRequest->responded_at !== null
-                ) {
+                if ($ticket->status !== TicketStatus::WaitingInfo || $informationRequest->responded_at !== null) {
                     abort(409, 'คำขอนี้ไม่ได้อยู่ระหว่างรอคำตอบ');
                 }
 
@@ -64,37 +63,12 @@ class RespondTicketInformation
                     'body' => $body,
                 ]);
 
-                foreach ($files as $file) {
-                    $directory = "tickets/{$ticket->id}/notes/{$note->id}";
-                    $filename = Str::uuid().'.'.$file->extension();
-                    $path = $directory.'/'.$filename;
-
-                    $storedPaths[] = $path;
-
-                    $writtenPath = Storage::disk('private')->putFileAs(
-                        $directory,
-                        $file,
-                        $filename,
-                    );
-
-                    if ($writtenPath === false) {
-                        throw new RuntimeException('Cannot store attachment.');
-                    }
-
-                    $originalName = basename(
-                        str_replace('\\', '/', $file->getClientOriginalName()),
-                    );
-
-                    $note->attachments()->create([
-                        'uploaded_by_id' => $actor->id,
-                        'disk' => 'private',
-                        'storage_path' => $path,
-                        'original_name' => $originalName,
-                        'mime_type' => $file->getMimeType()
-                            ?? 'application/octet-stream',
-                        'size_bytes' => $file->getSize(),
-                    ]);
-                }
+                $this->attachments->store(
+                    $note,
+                    $actor,
+                    $files,
+                    $storedPaths,
+                );
 
                 $informationRequest->responseNote()->associate($note);
                 $informationRequest->responded_by_id = $actor->id;
@@ -128,20 +102,8 @@ class RespondTicketInformation
                     'pendingInformationRequest.questionNote.author',
                 ]);
             });
-        } catch (Throwable $error) {
-            if ($storedPaths !== []) {
-                try {
-                    $deleted = Storage::disk('private')->delete($storedPaths);
-
-                    if (! $deleted) {
-                        report(new RuntimeException(
-                            'Cannot clean up failed attachment upload.',
-                        ));
-                    }
-                } catch (Throwable $cleanupError) {
-                    report($cleanupError);
-                }
-            }
+        }catch (Throwable $error) {
+            $this->attachments->cleanup($storedPaths);
 
             throw $error;
         }
