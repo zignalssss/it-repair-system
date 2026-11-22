@@ -18,6 +18,7 @@ use App\Http\Requests\Tickets\InformationMessageRequest;
 use App\Http\Requests\Tickets\CancelRepairTicketRequest;
 use App\Http\Requests\Tickets\IndexRepairTicketRequest;
 use App\Http\Requests\Tickets\StoreRepairTicketRequest;
+use App\Http\Requests\Tickets\RespondInformationRequest;
 use App\Http\Requests\Tickets\StoreWorkLogRequest;
 
 use App\Http\Resources\RepairTicketResource;
@@ -187,11 +188,11 @@ class RepairTicketController extends Controller
     }
 
     public function respondInformation(
-        InformationMessageRequest $request,
+        RespondInformationRequest $request,
         RepairTicket $ticket,
         InformationRequest $informationRequest,
         RespondTicketInformation $action,
-    ): RepairTicketResource {
+    ): JsonResponse {
         $actor = $request->user();
 
         if (! ($actor instanceof User)) {
@@ -204,10 +205,39 @@ class RepairTicketController extends Controller
             $actor,
             $ticket->id,
             $informationRequest->id,
-            $data['body'],
+            $data['body'] ?? null,
+            $request->file('files', []),
         );
 
-        return new RepairTicketResource($updatedTicket);
+        return (new RepairTicketResource($updatedTicket))
+            ->response()
+            ->setStatusCode(200);
+    }
+
+    public function notes(
+        Request $request,
+        RepairTicket $ticket,
+    ): AnonymousResourceCollection {
+        $actor = $request->user();
+
+        if (! ($actor instanceof User)) {
+            abort(401, 'Unauthenticated.');
+        }
+
+        Gate::authorize('view', $ticket);
+
+        $request->validate([
+            'page' => ['sometimes', 'integer', 'min:1'],
+        ]);
+
+        $notes = $ticket->notes()
+            ->visibleTo($actor)
+            ->with(['author', 'attachments'])
+            ->orderByDesc('created_at')
+            ->orderByDesc('id')
+            ->paginate(20);
+
+        return TicketNoteResource::collection($notes);
     }
 
 }

@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\RepairTicketController;
+use App\Http\Controllers\AttachmentController;
 use App\Http\Middleware\EnsureUserIsActive;
 use Illuminate\Support\Facades\Route;
 
@@ -39,6 +40,10 @@ Route::prefix('v1')->group(function () {
             Route::post('/tickets/{ticket}/information-requests', [RepairTicketController::class,'requestInformation']);
 
             Route::post('/tickets/{ticket}/information-requests/{informationRequest}/respond',[RepairTicketController::class,'respondInformation']);
+
+            Route::get('/tickets/{ticket}/notes', [RepairTicketController::class,'notes',]);
+
+            Route::get('/attachments/{attachment}/download', [AttachmentController::class,'download',])->name('attachments.download');
         });
     });
 });

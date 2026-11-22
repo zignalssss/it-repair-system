@@ -29,6 +29,12 @@ return [
     */
 
     'disks' => [
+        'private' => [
+            'driver' => 'local',
+            'root' => storage_path('app/private/attachments'),
+            'serve' => false,
+            'throw' => true,
+        ],
 
         'local' => [
             'driver' => 'local',
