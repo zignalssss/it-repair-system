@@ -26,6 +26,6 @@ class Department extends Model
     }
     public function repairTickets(): HasMany
     {
-    return $this->hasMany(RepairTicket::class);
+        return $this->hasMany(RepairTicket::class);
     }
 }

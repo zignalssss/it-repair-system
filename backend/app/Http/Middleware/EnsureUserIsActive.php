@@ -10,12 +10,7 @@ class EnsureUserIsActive
 {
     public function handle(Request $request, Closure $next): Response
     {
-        abort_unless(
-            $request->user()?->is_active,
-            403,
-            'บัญชีนี้ถูกปิดใช้งาน',
-        );
-
+        abort_unless($request->user()?->is_active,403,'บัญชีนี้ถูกปิดใช้งาน');
         return $next($request);
     }
 }

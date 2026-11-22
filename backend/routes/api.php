@@ -18,17 +18,22 @@ Route::prefix('v1')->group(function () {
 
     Route::middleware('auth:sanctum')->group(function () {
 
-        Route::get('/me', [AuthController::class, 'me'])
-            ->middleware(EnsureUserIsActive::class);
-
-        Route::get('/tickets', [RepairTicketController::class,'index',]);
-
-        Route::get('/tickets/{ticket}', [RepairTicketController::class,'show',]);
-
         Route::post('/logout', [AuthController::class, 'logout']);
 
-        Route::post('/tickets', [RepairTicketController::class, 'store'])
-            ->middleware(EnsureUserIsActive::class);
-        
+        Route::middleware(EnsureUserIsActive::class)->group(function () {
+
+            Route::get('/me', [AuthController::class, 'me']);
+
+            Route::get('/tickets', [RepairTicketController::class,'index',]);
+
+            Route::get('/tickets/{ticket}', [RepairTicketController::class,'show',]);
+
+            Route::post('/tickets', [RepairTicketController::class, 'store']);
+
+            Route::post('/tickets/{ticket}/cancel', [RepairTicketController::class,'cancel',]);
+
+            Route::post('/tickets/{ticket}/claim', [RepairTicketController::class,'claim',]);
+
+        });
     });
 });

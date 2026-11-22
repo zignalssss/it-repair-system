@@ -3,11 +3,15 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Actions\RepairTickets\CancelRepairTicket;
+use App\Actions\RepairTickets\ClaimRepairTicket;
+use App\Http\Requests\Tickets\CancelRepairTicketRequest;
 use App\Http\Requests\Tickets\IndexRepairTicketRequest;
 use App\Models\RepairTicket;
 use App\Actions\RepairTickets\CreateRepairTicket;
 use App\Http\Requests\Tickets\StoreRepairTicketRequest;
 use App\Http\Resources\RepairTicketResource;
+use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -79,5 +83,46 @@ class RepairTicketController extends Controller
         ]);
 
         return new RepairTicketResource($ticket);
-}
+    }
+
+    public function cancel(
+        CancelRepairTicketRequest $request,
+        RepairTicket $ticket,
+        CancelRepairTicket $cancelRepairTicket,
+    ): RepairTicketResource {
+        $actor = $request->user();
+
+        if (! ($actor instanceof User)) {
+            abort(401, 'Unauthenticated.');
+        }
+
+        $data = $request->validated();
+
+        $updatedTicket = $cancelRepairTicket->handle(
+            $actor,
+            $ticket->id,
+            $data['reason'],
+        );
+
+        return new RepairTicketResource($updatedTicket);
+    }
+
+    public function claim(
+        Request $request,
+        RepairTicket $ticket,
+        ClaimRepairTicket $claimRepairTicket,
+    ): RepairTicketResource {
+        $actor = $request->user();
+
+        if (! ($actor instanceof User)) {
+            abort(401, 'Unauthenticated.');
+        }
+
+        $updatedTicket = $claimRepairTicket->handle(
+            $actor,
+            $ticket->id,
+        );
+
+        return new RepairTicketResource($updatedTicket);
+    }
 }
