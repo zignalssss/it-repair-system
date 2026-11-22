@@ -38,6 +38,16 @@ class RepairTicketResource extends JsonResource
                 'name' => $this->assignee->name,
             ]),
 
+            'resolved_by' => $this->whenLoaded('resolvedBy', fn () => [
+                'id' => $this->resolvedBy->id,
+                'name' => $this->resolvedBy->name,
+            ]),
+
+            'parts_used' => $this->whenLoaded(
+                'partsUsed',
+                fn () => RepairPartUsedResource::collection($this->partsUsed),
+            ),
+
             'pending_information_request' => $this->whenLoaded(
                 'pendingInformationRequest',
                 fn () => [

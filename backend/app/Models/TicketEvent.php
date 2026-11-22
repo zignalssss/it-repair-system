@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\SupportLevel;
 use App\Enums\TicketStatus;
 use App\Enums\UserRole;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -64,5 +65,13 @@ class TicketEvent extends Model
     public function equipmentRequest(): BelongsTo
     {
         return $this->belongsTo(EquipmentRequest::class,'equipment_request_id',);
+    }
+
+    public function scopeVisibleTo(Builder $query, User $user): void
+    {
+        $query->whereIn('audience', $user->role->readableAudiences())
+            ->whereHas('ticket', function (Builder $tickets) use ($user) {
+                $tickets->visibleTo($user);
+            });
     }
 }

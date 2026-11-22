@@ -130,4 +130,9 @@ class RepairTicket extends Model
     {
         return $this->hasMany(EquipmentRequest::class, 'ticket_id');
     }
+
+    public function partsUsed(): HasMany
+    {
+        return $this->hasMany(RepairPartUsed::class, 'ticket_id');
+    }
 }

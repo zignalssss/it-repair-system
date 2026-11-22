@@ -105,6 +105,8 @@ class RepairTicketController extends Controller
             'department',
             'assignee',
             'pendingInformationRequest.questionNote.author',
+            'resolvedBy',
+            'partsUsed',
         ]);
 
         return new RepairTicketResource($ticket);

@@ -43,29 +43,7 @@ class TicketNote extends Model
 
     public function scopeVisibleTo(Builder $query, User $user): void
     {
-        $audiences = match ($user->role) {
-            UserRole::User => ['requester'],
-
-            UserRole::JuniorTechnician => [
-                'requester',
-                'junior',
-            ],
-
-            UserRole::SeniorTechnician => [
-                'requester',
-                'junior',
-                'senior',
-            ],
-
-            UserRole::ITManager => [
-                'requester',
-                'junior',
-                'senior',
-                'manager',
-            ],
-        };
-
-        $query->whereIn('audience', $audiences)
+        $query->whereIn('audience', $user->role->readableAudiences())
             ->whereHas('ticket', function (Builder $tickets) use ($user) {
                 $tickets->visibleTo($user);
             });

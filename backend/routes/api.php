@@ -6,6 +6,8 @@ use App\Http\Controllers\AttachmentController;
 use App\Http\Middleware\EnsureUserIsActive;
 use App\Http\Controllers\EquipmentRequestController;
 use App\Http\Controllers\TicketManagementController;
+use App\Http\Controllers\TicketResolutionController;
+use App\Http\Controllers\TicketEventController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
@@ -62,6 +64,10 @@ Route::prefix('v1')->group(function () {
             Route::post('/tickets/{ticket}/equipment-requests', [EquipmentRequestController::class,'store',]);
 
             Route::post('/tickets/{ticket}/equipment-requests/{equipmentRequest}/decision',[EquipmentRequestController::class,'decide',],);
+
+            Route::post('/tickets/{ticket}/resolve', [TicketResolutionController::class,'resolve',]);
+
+            Route::get('/tickets/{ticket}/events', [TicketEventController::class,'index',]);
         });
     });
 });
