@@ -2,18 +2,27 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\User;
+
 use App\Actions\RepairTickets\CancelRepairTicket;
 use App\Actions\RepairTickets\ClaimRepairTicket;
+use App\Actions\RepairTickets\RequestTicketInformation;
+use App\Actions\RepairTickets\RespondTicketInformation;
+use App\Actions\RepairTickets\CreateRepairTicket;
+use App\Actions\RepairTickets\AddWorkLog;
+
+use App\Models\InformationRequest;
+use App\Models\RepairTicket;
+use App\Models\User;
+
+use App\Http\Requests\Tickets\InformationMessageRequest;
 use App\Http\Requests\Tickets\CancelRepairTicketRequest;
 use App\Http\Requests\Tickets\IndexRepairTicketRequest;
-use App\Models\RepairTicket;
-use App\Actions\RepairTickets\CreateRepairTicket;
 use App\Http\Requests\Tickets\StoreRepairTicketRequest;
-use App\Http\Resources\RepairTicketResource;
-use App\Actions\RepairTickets\AddWorkLog;
 use App\Http\Requests\Tickets\StoreWorkLogRequest;
+
+use App\Http\Resources\RepairTicketResource;
 use App\Http\Resources\TicketNoteResource;
+
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Gate;
@@ -45,7 +54,7 @@ class RepairTicketController extends Controller
     public function index(
         IndexRepairTicketRequest $request,
     ): AnonymousResourceCollection 
-{
+    {
         $user = $request->user();
 
         if (! ($user instanceof User)) {
@@ -83,6 +92,7 @@ class RepairTicketController extends Controller
             'requester',
             'department',
             'assignee',
+            'pendingInformationRequest.questionNote.author',
         ]);
 
         return new RepairTicketResource($ticket);
@@ -151,4 +161,53 @@ class RepairTicketController extends Controller
             ->response()
             ->setStatusCode(201);
     }
+
+    public function requestInformation(
+        InformationMessageRequest $request,
+        RepairTicket $ticket,
+        RequestTicketInformation $action,
+    ): JsonResponse {
+        $actor = $request->user();
+
+        if (! ($actor instanceof User)) {
+            abort(401, 'Unauthenticated.');
+        }
+
+        $data = $request->validated();
+
+        $updatedTicket = $action->handle(
+            $actor,
+            $ticket->id,
+            $data['body'],
+        );
+
+        return (new RepairTicketResource($updatedTicket))
+            ->response()
+            ->setStatusCode(201);
+    }
+
+    public function respondInformation(
+        InformationMessageRequest $request,
+        RepairTicket $ticket,
+        InformationRequest $informationRequest,
+        RespondTicketInformation $action,
+    ): RepairTicketResource {
+        $actor = $request->user();
+
+        if (! ($actor instanceof User)) {
+            abort(401, 'Unauthenticated.');
+        }
+
+        $data = $request->validated();
+
+        $updatedTicket = $action->handle(
+            $actor,
+            $ticket->id,
+            $informationRequest->id,
+            $data['body'],
+        );
+
+        return new RepairTicketResource($updatedTicket);
+    }
+
 }

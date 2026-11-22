@@ -25,6 +25,7 @@ class TicketEvent extends Model
         'to_assignee_id',
         'note_id',
         'metadata',
+        'information_request_id',
     ];
 
     protected function casts(): array
@@ -52,5 +53,10 @@ class TicketEvent extends Model
     public function note(): BelongsTo
     {
         return $this->belongsTo(TicketNote::class, 'note_id');
+    }
+
+    public function informationRequest(): BelongsTo
+    {
+        return $this->belongsTo(InformationRequest::class,'information_request_id');
     }
 }

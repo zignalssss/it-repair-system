@@ -57,11 +57,32 @@ class RepairTicketPolicy
         };
     }
 
-    public function addWorkLog(User $user, RepairTicket $ticket): bool
+   public function addWorkLog(User $user, RepairTicket $ticket): bool
     {
+        return $this->isAssignedTechnician($user, $ticket);
+    }
+
+    public function requestInformation(User $user, RepairTicket $ticket): bool
+    {
+        return $this->isAssignedTechnician($user, $ticket);
+    }
+
+    public function respondInformation(User $user, RepairTicket $ticket): bool
+    {
+        return $user->is_active
+            && $user->role === UserRole::User
+            && (int) $ticket->requester_id === (int) $user->id
+            && (int) $ticket->department_id === (int) $user->department_id;
+    }
+
+    private function isAssignedTechnician(
+        User $user,
+        RepairTicket $ticket,
+    ): bool {
         return $user->is_active
             && ($user->role === UserRole::JuniorTechnician || $user->role === UserRole::SeniorTechnician)
             && $ticket->assignee_id !== null
             && (int) $ticket->assignee_id === (int) $user->id;
     }
 }
+

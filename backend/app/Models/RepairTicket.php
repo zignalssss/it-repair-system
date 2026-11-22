@@ -8,6 +8,7 @@ use App\Enums\TicketStatus;
 use App\Enums\UserRole;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -112,5 +113,16 @@ class RepairTicket extends Model
     public function notes(): HasMany
     {
         return $this->hasMany(TicketNote::class, 'ticket_id');
+    }
+
+    public function informationRequests(): HasMany
+    {
+        return $this->hasMany(InformationRequest::class, 'ticket_id');
+    }
+
+    public function pendingInformationRequest(): HasOne
+    {
+        return $this->hasOne(InformationRequest::class, 'ticket_id')
+            ->whereNull('responded_at');
     }
 }

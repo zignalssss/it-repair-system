@@ -38,6 +38,19 @@ class RepairTicketResource extends JsonResource
                 'name' => $this->assignee->name,
             ]),
 
+            'pending_information_request' => $this->whenLoaded(
+                'pendingInformationRequest',
+                fn () => [
+                    'id' => $this->pendingInformationRequest->id,
+                    'requested_at' => $this->pendingInformationRequest
+                        ->requested_at
+                        ->toISOString(),
+                    'question' => new TicketNoteResource(
+                        $this->pendingInformationRequest->questionNote,
+                    ),
+                ],
+            ),
+
             'first_started_at' => $this->first_started_at?->toISOString(),
             'resolved_at' => $this->resolved_at?->toISOString(),
             'cancelled_at' => $this->cancelled_at?->toISOString(),
