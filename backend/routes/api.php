@@ -4,6 +4,7 @@ use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\RepairTicketController;
 use App\Http\Controllers\AttachmentController;
 use App\Http\Middleware\EnsureUserIsActive;
+use App\Http\Controllers\TicketManagementController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
@@ -43,11 +44,17 @@ Route::prefix('v1')->group(function () {
 
             Route::get('/tickets/{ticket}/notes', [RepairTicketController::class,'notes',]);
 
-            Route::get('/attachments/{attachment}/download', [AttachmentController::class,'download',])->name('attachments.download');
-
             Route::post('/tickets/{ticket}/escalate', [RepairTicketController::class,'escalate',]);
 
             Route::post('/tickets/{ticket}/return-to-junior', [RepairTicketController::class,'returnToJunior',]);
+
+            Route::get('/attachments/{attachment}/download', [AttachmentController::class,'download',])->name('attachments.download');
+
+            Route::get('/technicians', [TicketManagementController::class,'technicians',]);
+
+            Route::patch('/tickets/{ticket}/assignment', [TicketManagementController::class,'assign',]);
+
+            Route::patch('/tickets/{ticket}/priority', [TicketManagementController::class,'updatePriority',]);
         });
     });
 });

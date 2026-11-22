@@ -98,5 +98,26 @@ class RepairTicketPolicy
             && $user->role === UserRole::SeniorTechnician
             && $ticket->support_level === SupportLevel::Senior;
     }
+
+    public function viewTechnicians(User $user): bool
+    {
+        return $this->isManager($user);
+    }
+
+    public function assign(User $user, RepairTicket $ticket): bool
+    {
+        return $this->isManager($user);
+    }
+
+    public function updatePriority(User $user, RepairTicket $ticket): bool
+    {
+        return $this->isManager($user);
+    }
+
+    private function isManager(User $user): bool
+    {
+        return $user->is_active
+            && $user->role === UserRole::ITManager;
+    }
 }
 
