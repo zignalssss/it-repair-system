@@ -11,6 +11,9 @@ use App\Models\RepairTicket;
 use App\Actions\RepairTickets\CreateRepairTicket;
 use App\Http\Requests\Tickets\StoreRepairTicketRequest;
 use App\Http\Resources\RepairTicketResource;
+use App\Actions\RepairTickets\AddWorkLog;
+use App\Http\Requests\Tickets\StoreWorkLogRequest;
+use App\Http\Resources\TicketNoteResource;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Gate;
@@ -124,5 +127,28 @@ class RepairTicketController extends Controller
         );
 
         return new RepairTicketResource($updatedTicket);
+    }
+    public function addWorkLog(
+        StoreWorkLogRequest $request,
+        RepairTicket $ticket,
+        AddWorkLog $addWorkLog,
+    ): JsonResponse {
+        $actor = $request->user();
+
+        if (! ($actor instanceof User)) {
+            abort(401, 'Unauthenticated.');
+        }
+
+        $data = $request->validated();
+
+        $note = $addWorkLog->handle(
+            $actor,
+            $ticket->id,
+            $data['body'],
+        );
+
+        return (new TicketNoteResource($note))
+            ->response()
+            ->setStatusCode(201);
     }
 }

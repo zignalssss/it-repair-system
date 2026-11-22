@@ -22,9 +22,7 @@ class RepairTicketPolicy
             ->whereKey($ticket->id)
             ->exists();
 
-        return $visible
-            ? Response::allow()
-            : Response::denyAsNotFound();
+        return $visible ? Response::allow() : Response::denyAsNotFound();
     }
 
     public function create(User $user): bool
@@ -57,5 +55,13 @@ class RepairTicketPolicy
 
             default => false,
         };
+    }
+
+    public function addWorkLog(User $user, RepairTicket $ticket): bool
+    {
+        return $user->is_active
+            && ($user->role === UserRole::JuniorTechnician || $user->role === UserRole::SeniorTechnician)
+            && $ticket->assignee_id !== null
+            && (int) $ticket->assignee_id === (int) $user->id;
     }
 }

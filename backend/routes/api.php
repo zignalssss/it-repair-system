@@ -33,7 +33,8 @@ Route::prefix('v1')->group(function () {
             Route::post('/tickets/{ticket}/cancel', [RepairTicketController::class,'cancel',]);
 
             Route::post('/tickets/{ticket}/claim', [RepairTicketController::class,'claim',]);
-
+            
+            Route::post('/tickets/{ticket}/work-logs', [RepairTicketController::class,'addWorkLog',]);
         });
     });
 });

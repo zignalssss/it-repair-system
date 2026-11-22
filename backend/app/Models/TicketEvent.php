@@ -23,6 +23,7 @@ class TicketEvent extends Model
         'to_level',
         'from_assignee_id',
         'to_assignee_id',
+        'note_id',
         'metadata',
     ];
 
@@ -46,5 +47,10 @@ class TicketEvent extends Model
     public function actor(): BelongsTo
     {
         return $this->belongsTo(User::class, 'actor_id');
+    }
+
+    public function note(): BelongsTo
+    {
+        return $this->belongsTo(TicketNote::class, 'note_id');
     }
 }

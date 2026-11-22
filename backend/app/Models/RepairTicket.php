@@ -108,4 +108,9 @@ class RepairTicket extends Model
     {
         return $this->hasMany(TicketEvent::class, 'ticket_id');
     }
+
+    public function notes(): HasMany
+    {
+        return $this->hasMany(TicketNote::class, 'ticket_id');
+    }
 }
