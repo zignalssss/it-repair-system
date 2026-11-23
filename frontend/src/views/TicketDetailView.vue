@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { errorMessage } from '@/lib/http'
 import { useAuthStore } from '@/stores/auth'
@@ -8,7 +8,9 @@ import { cancelTicket, claimTicket, getTicket, type Ticket } from '@/services/ti
 const route = useRoute()
 const auth = useAuthStore()
 
-const ticketId = Number(route.params.id)
+const ticketId = computed(() => Number(route.params.id))
+// Ignore responses from an earlier route, including in-flight actions.
+let revision = 0
 const ticket = ref<Ticket | null>(null)
 const loading = ref(true)
 const busy = ref(false)
@@ -21,46 +23,80 @@ const canCancel = computed(
     ticket.value?.status === 'new',
 )
 
-const canClaim = computed(
-  () =>
-    (auth.user?.role === 'junior_technician' || auth.user?.role === 'senior_technician') &&
-    !ticket.value?.assignee &&
-    ['new', 'escalated', 'returned'].includes(ticket.value?.status ?? ''),
-)
+const canClaim = computed(() => {
+  const user = auth.user
+  const current = ticket.value
+  if (!user || !current) return false
 
-onMounted(async () => {
-  try {
-    ticket.value = await getTicket(ticketId)
-  } catch (e) {
-    error.value = errorMessage(e)
-  } finally {
-    loading.value = false
-  }
+  const level =
+    user.role === 'junior_technician'
+      ? 'junior'
+      : user.role === 'senior_technician'
+        ? 'senior'
+        : null
+
+  return (
+    level !== null &&
+    current.support_level === level &&
+    ['new', 'escalated', 'returned'].includes(current.status) &&
+    (!current.assignee || current.assignee.id === user.id)
+  )
 })
 
+watch(
+  ticketId,
+  async (id, _previousId, onCleanup) => {
+    const currentRevision = ++revision
+    onCleanup(() => {
+      if (revision === currentRevision) revision++
+    })
+
+    ticket.value = null
+    loading.value = true
+    busy.value = false
+    error.value = ''
+
+    try {
+      const result = await getTicket(id)
+      if (revision === currentRevision) ticket.value = result
+    } catch (e) {
+      if (revision === currentRevision) error.value = errorMessage(e)
+    } finally {
+      if (revision === currentRevision) loading.value = false
+    }
+  },
+  { immediate: true },
+)
+
 async function cancel() {
+  if (!ticket.value || !canCancel.value || busy.value) return
+  const id = ticket.value.id
   const reason = window.prompt('เหตุผลที่ยกเลิก')
   if (!reason?.trim()) return
 
-  await run(() => cancelTicket(ticketId, reason.trim()))
+  await run(() => cancelTicket(id, reason.trim()))
 }
 
 async function claim() {
-  await run(() => claimTicket(ticketId))
+  if (!ticket.value || !canClaim.value) return
+  const id = ticket.value.id
+  await run(() => claimTicket(id))
 }
 
 async function run(action: () => Promise<Ticket>) {
   if (busy.value) return
 
+  const currentRevision = revision
   busy.value = true
   error.value = ''
 
   try {
-    ticket.value = await action()
+    const result = await action()
+    if (revision === currentRevision) ticket.value = result
   } catch (e) {
-    error.value = errorMessage(e)
+    if (revision === currentRevision) error.value = errorMessage(e)
   } finally {
-    busy.value = false
+    if (revision === currentRevision) busy.value = false
   }
 }
 </script>

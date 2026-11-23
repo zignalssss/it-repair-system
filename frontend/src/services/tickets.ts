@@ -34,10 +34,24 @@ export interface NewTicket {
   files: File[]
 }
 
-export async function listTickets() {
-  const response = await http.get<{ data: Ticket[] }>('/api/v1/tickets')
+export interface TicketPagination {
+  current_page: number
+  last_page: number
+  per_page: number
+  total: number
+}
 
-  return response.data.data
+export interface TicketPage {
+  data: Ticket[]
+  meta: TicketPagination
+}
+
+export async function listTickets(page = 1): Promise<TicketPage> {
+  const response = await http.get<TicketPage>('/api/v1/tickets', {
+    params: { page },
+  })
+
+  return response.data
 }
 
 export async function getTicket(id: number) {

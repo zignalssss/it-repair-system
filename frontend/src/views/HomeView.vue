@@ -3,7 +3,7 @@ import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { errorMessage as apiErrorMessage } from '@/lib/http'
-import { listTickets, type Ticket } from '@/services/tickets'
+import { listTickets, type Ticket, type TicketPagination } from '@/services/tickets'
 
 const auth = useAuthStore()
 const router = useRouter()
@@ -12,18 +12,28 @@ const loggingOut = ref(false)
 const errorMessage = ref('')
 
 const tickets = ref<Ticket[]>([])
-const ticketsLoading = ref(true)
+const ticketsLoading = ref(false)
+const pagination = ref<TicketPagination | null>(null)
 const ticketsError = ref('')
 
-onMounted(async () => {
+onMounted(() => loadTickets())
+
+async function loadTickets(page = 1) {
+  if (ticketsLoading.value) return
+
+  ticketsLoading.value = true
+  ticketsError.value = ''
+
   try {
-    tickets.value = await listTickets()
+    const result = await listTickets(page)
+    tickets.value = result.data
+    pagination.value = result.meta
   } catch (e) {
     ticketsError.value = apiErrorMessage(e)
   } finally {
     ticketsLoading.value = false
   }
-})
+}
 
 async function handleLogout() {
   if (loggingOut.value) return
@@ -50,7 +60,10 @@ async function handleLogout() {
           <span
             class="relative inline-flex items-center rounded-sm bg-signal-500 py-1 pr-2.5 pl-5 font-mono text-xs font-semibold tracking-wider text-stone-950"
           >
-            <span class="absolute left-1.5 size-1.5 rounded-full bg-stone-950" aria-hidden="true"></span>
+            <span
+              class="absolute left-1.5 size-1.5 rounded-full bg-stone-950"
+              aria-hidden="true"
+            ></span>
             IT
           </span>
           <h1 class="text-sm font-medium text-stone-200">ระบบแจ้งซ่อม</h1>
@@ -76,12 +89,20 @@ async function handleLogout() {
       </p>
 
       <p class="text-sm text-stone-500">สวัสดี</p>
-      <p class="mt-1 text-3xl font-semibold break-words text-stone-950 sm:text-4xl">{{ auth.user.name }}</p>
+      <p class="mt-1 text-3xl font-semibold break-words text-stone-950 sm:text-4xl">
+        {{ auth.user.name }}
+      </p>
 
       <!-- Account card, styled as a maintenance tag -->
-      <section class="mt-10 max-w-xl overflow-hidden rounded-lg bg-white ring-1 ring-stone-200" aria-label="ข้อมูลบัญชี">
+      <section
+        class="mt-10 max-w-xl overflow-hidden rounded-lg bg-white ring-1 ring-stone-200"
+        aria-label="ข้อมูลบัญชี"
+      >
         <div class="flex items-center gap-2 border-b border-dashed border-stone-300 px-5 py-3">
-          <span class="size-2 rounded-full bg-signal-500 ring-2 ring-signal-200" aria-hidden="true"></span>
+          <span
+            class="size-2 rounded-full bg-signal-500 ring-2 ring-signal-200"
+            aria-hidden="true"
+          ></span>
           <span class="text-xs font-medium text-stone-500">ข้อมูลบัญชี</span>
         </div>
 
@@ -146,7 +167,10 @@ async function handleLogout() {
           <tbody>
             <tr v-for="ticket in tickets" :key="ticket.id" class="border-t">
               <td class="p-2">
-                <RouterLink :to="{ name: 'ticket-detail', params: { id: ticket.id } }" class="underline">
+                <RouterLink
+                  :to="{ name: 'ticket-detail', params: { id: ticket.id } }"
+                  class="underline"
+                >
                   {{ ticket.ticket_no }}
                 </RouterLink>
               </td>
@@ -157,6 +181,35 @@ async function handleLogout() {
             </tr>
           </tbody>
         </table>
+
+        <nav
+          v-if="pagination"
+          aria-label="เปลี่ยนหน้ารายการใบแจ้งซ่อม"
+          class="mt-4 flex flex-wrap items-center justify-between gap-3 text-sm"
+        >
+          <p aria-live="polite">
+            หน้า {{ pagination.current_page }} จาก {{ pagination.last_page }} · ทั้งหมด
+            {{ pagination.total }} รายการ
+          </p>
+          <div class="flex gap-2">
+            <button
+              aria-label="หน้าก่อนหน้า"
+              :disabled="ticketsLoading || pagination.current_page <= 1"
+              class="border px-3 py-1.5 disabled:opacity-40"
+              @click="loadTickets(pagination.current_page - 1)"
+            >
+              ก่อนหน้า
+            </button>
+            <button
+              aria-label="หน้าถัดไป"
+              :disabled="ticketsLoading || pagination.current_page >= pagination.last_page"
+              class="border px-3 py-1.5 disabled:opacity-40"
+              @click="loadTickets(pagination.current_page + 1)"
+            >
+              ถัดไป
+            </button>
+          </div>
+        </nav>
       </section>
     </div>
   </main>
