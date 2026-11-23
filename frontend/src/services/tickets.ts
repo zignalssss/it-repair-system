@@ -203,3 +203,48 @@ export async function returnTicketToJunior(ticketId: number, body: string): Prom
   )
   return response.data.data
 }
+
+export type EquipmentStatus = 'pending' | 'approved' | 'rejected'
+export interface EquipmentRequest {
+  id: number
+  ticket_id: number
+  status: EquipmentStatus
+  ticket_status?: TicketStatus
+  items: { id: number; name: string; quantity: number; estimated_unit_price?: string }[]
+  reason?: string
+  estimated_total?: string | null
+  requested_by_id?: number
+  requested_at?: string
+  decision_reason?: string | null
+  decided_at?: string | null
+  decided_by_id?: number | null
+}
+export interface EquipmentPage {
+  data: EquipmentRequest[]
+  meta: TicketPagination
+}
+export interface NewEquipmentRequest {
+  reason: string
+  items: { name: string; quantity: number; estimated_unit_price: string }[]
+}
+export async function listEquipmentRequests(ticketId: number, page = 1): Promise<EquipmentPage> {
+  const response = await http.get<EquipmentPage>(`/api/v1/tickets/${ticketId}/equipment-requests`, {
+    params: { page },
+  })
+  if (!Array.isArray(response.data.data)) throw new Error('รูปแบบรายการอุปกรณ์ไม่ถูกต้อง')
+  return response.data
+}
+export async function requestTicketEquipment(ticketId: number, input: NewEquipmentRequest) {
+  const response = await http.post<{ data: EquipmentRequest }>(
+    `/api/v1/tickets/${ticketId}/equipment-requests`, input,
+  )
+  return response.data.data
+}
+export async function decideTicketEquipment(
+  ticketId: number, requestId: number, status: Exclude<EquipmentStatus, 'pending'>, reason: string | null,
+) {
+  const response = await http.post<{ data: EquipmentRequest }>(
+    `/api/v1/tickets/${ticketId}/equipment-requests/${requestId}/decision`, { status, reason },
+  )
+  return response.data.data
+}

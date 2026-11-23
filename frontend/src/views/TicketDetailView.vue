@@ -4,6 +4,7 @@ import { isAxiosError } from 'axios'
 import TicketHistory from '@/components/TicketHistory.vue'
 import TicketInformation from '@/components/TicketInformation.vue'
 import TicketHandoff from '@/components/TicketHandoff.vue'
+import TicketEquipment from '@/components/TicketEquipment.vue'
 import { useRoute, useRouter } from 'vue-router'
 import { errorMessage } from '@/lib/http'
 import { useAuthStore } from '@/stores/auth'
@@ -275,6 +276,13 @@ async function run(action: () => Promise<Ticket>) {
         :ticket="ticket"
         v-model:busy="busy"
         @completed="completeHandoff"
+      />
+
+      <TicketEquipment
+        :key="ticket.id"
+        :ticket="ticket"
+        v-model:busy="busy"
+        @updated="updateTicket"
       />
 
       <TicketHistory :key="`${ticket.id}-${historyRevision}`" :ticket-id="ticket.id" />

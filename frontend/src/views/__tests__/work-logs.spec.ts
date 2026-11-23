@@ -66,6 +66,8 @@ function api(
   const posts: { url: string | undefined; data: unknown }[] = []
   let saved = false
   http.defaults.adapter = async (config) => {
+    if (config.url?.endsWith('/equipment-requests'))
+      return reply({ data: [], meta: { current_page: 1, last_page: 1, per_page: 20, total: 0 } }, config)
     if (config.url?.endsWith('/events'))
       return reply(
         {
