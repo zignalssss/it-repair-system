@@ -25,6 +25,7 @@ export interface Ticket {
   department?: { id: number; code: string; name: string } | null
   assignee?: { id: number; name: string } | null
   created_at: string
+  pending_information_request?: PendingInformationRequest | null
 }
 
 export interface NewTicket {
@@ -151,5 +152,39 @@ export async function addTicketWorkLog(ticketId: number, body: string): Promise<
     body,
   })
 
+  return response.data.data
+}
+
+export interface PendingInformationRequest {
+  id: number
+  requested_at: string
+  question: TicketNote
+}
+
+export async function requestTicketInformation(ticketId: number, body: string): Promise<Ticket> {
+  const response = await http.post<{ data: Ticket }>(
+    `/api/v1/tickets/${ticketId}/information-requests`,
+    { body },
+  )
+  return response.data.data
+}
+
+export async function respondTicketInformation(
+  ticketId: number,
+  requestId: number,
+  input: { body: string; files: File[] },
+): Promise<Ticket> {
+  const form = new FormData()
+  const body = input.body.trim()
+
+  if (body) 
+    form.append('body', body)
+  for (const file of input.files) 
+    form.append('files[]', file)
+
+  const response = await http.post<{ data: Ticket }>(
+    `/api/v1/tickets/${ticketId}/information-requests/${requestId}/respond`,
+    form,
+  )
   return response.data.data
 }

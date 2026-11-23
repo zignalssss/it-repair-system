@@ -2,6 +2,7 @@
 import { computed, ref, watch } from 'vue'
 import { isAxiosError } from 'axios'
 import TicketHistory from '@/components/TicketHistory.vue'
+import TicketInformation from '@/components/TicketInformation.vue'
 import { useRoute } from 'vue-router'
 import { errorMessage } from '@/lib/http'
 import { useAuthStore } from '@/stores/auth'
@@ -140,6 +141,11 @@ async function saveWorkLog() {
   }
 }
 
+function updateTicket(updated: Ticket) {
+  ticket.value = updated
+  historyRevision.value++
+}
+
 async function run(action: () => Promise<Ticket>) {
   if (busy.value) return
 
@@ -150,8 +156,7 @@ async function run(action: () => Promise<Ticket>) {
   try {
     const result = await action()
     if (revision === currentRevision) {
-      ticket.value = result
-      historyRevision.value++
+      updateTicket(result)
     }
   } catch (e) {
     if (revision === currentRevision) error.value = errorMessage(e)
@@ -235,6 +240,13 @@ async function run(action: () => Promise<Ticket>) {
           </button>
         </fieldset>
       </form>
+
+      <TicketInformation
+        :key="ticket.id"
+        :ticket="ticket"
+        v-model:busy="busy"
+        @updated="updateTicket"
+      />
 
       <TicketHistory :key="`${ticket.id}-${historyRevision}`" :ticket-id="ticket.id" />
     </template>
