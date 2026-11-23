@@ -18,6 +18,22 @@ const router = createRouter({
       },
     },
     {
+      path: '/tickets/new',
+      name: 'ticket-create',
+      component: () => import('@/views/TicketCreateView.vue'),
+      meta: {
+        requiresAuth: true,
+      },
+    },
+    {
+      path: '/tickets/:id(\\d+)',
+      name: 'ticket-detail',
+      component: () => import('@/views/TicketDetailView.vue'),
+      meta: {
+        requiresAuth: true,
+      },
+    },
+    {
       path: '/:pathMatch(.*)*',
       redirect: '/',
     },

@@ -1,13 +1,29 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { errorMessage as apiErrorMessage } from '@/lib/http'
+import { listTickets, type Ticket } from '@/services/tickets'
 
 const auth = useAuthStore()
 const router = useRouter()
 
 const loggingOut = ref(false)
 const errorMessage = ref('')
+
+const tickets = ref<Ticket[]>([])
+const ticketsLoading = ref(true)
+const ticketsError = ref('')
+
+onMounted(async () => {
+  try {
+    tickets.value = await listTickets()
+  } catch (e) {
+    ticketsError.value = apiErrorMessage(e)
+  } finally {
+    ticketsLoading.value = false
+  }
+})
 
 async function handleLogout() {
   if (loggingOut.value) return
@@ -98,6 +114,49 @@ async function handleLogout() {
             </dd>
           </div>
         </dl>
+      </section>
+
+      <!-- Tickets: logic first, styling later -->
+      <section class="mt-10">
+        <div class="flex items-center justify-between">
+          <h2 class="text-lg font-semibold">ใบแจ้งซ่อม</h2>
+          <RouterLink
+            v-if="auth.user.role === 'user'"
+            :to="{ name: 'ticket-create' }"
+            class="border bg-stone-900 px-3 py-1.5 text-sm text-white"
+          >
+            + แจ้งซ่อม
+          </RouterLink>
+        </div>
+
+        <p v-if="ticketsLoading" class="mt-4">กำลังโหลด...</p>
+        <p v-else-if="ticketsError" role="alert" class="mt-4 text-red-700">{{ ticketsError }}</p>
+        <p v-else-if="tickets.length === 0" class="mt-4">ยังไม่มีใบแจ้งซ่อม</p>
+
+        <table v-else class="mt-4 w-full text-left text-sm">
+          <thead>
+            <tr>
+              <th class="p-2">เลขที่</th>
+              <th class="p-2">หัวข้อ</th>
+              <th class="p-2">สถานะ</th>
+              <th class="p-2">ผู้แจ้ง</th>
+              <th class="p-2">ผู้รับผิดชอบ</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="ticket in tickets" :key="ticket.id" class="border-t">
+              <td class="p-2">
+                <RouterLink :to="{ name: 'ticket-detail', params: { id: ticket.id } }" class="underline">
+                  {{ ticket.ticket_no }}
+                </RouterLink>
+              </td>
+              <td class="p-2">{{ ticket.title }}</td>
+              <td class="p-2">{{ ticket.status }}</td>
+              <td class="p-2">{{ ticket.requester?.name ?? '-' }}</td>
+              <td class="p-2">{{ ticket.assignee?.name ?? '-' }}</td>
+            </tr>
+          </tbody>
+        </table>
       </section>
     </div>
   </main>
