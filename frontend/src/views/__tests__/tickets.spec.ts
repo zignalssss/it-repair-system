@@ -48,7 +48,19 @@ function user(role: AuthUser['role'] = 'junior_technician'): AuthUser {
   }
 }
 
-async function openDetail(actor = user()) {
+async function openDetail(actor = user(), emptyHistory = true) {
+  const adapter = http.defaults.adapter
+  if (emptyHistory && typeof adapter === 'function') {
+    http.defaults.adapter = async (config) => {
+      if (config.url?.endsWith('/events')) {
+        return reply(
+          { data: [], meta: { current_page: 1, last_page: 1, per_page: 20, total: 0 } },
+          config,
+        )
+      }
+      return adapter(config)
+    }
+  }
   const pinia = createPinia()
   useAuthStore(pinia).user = actor
   const router = createRouter({
@@ -72,6 +84,48 @@ function reply(data: unknown, config: InternalAxiosRequestConfig) {
 }
 
 describe('ticket detail', () => {
+  it('refreshes the visible history after a successful claim', async () => {
+    let claimed = false
+    http.defaults.adapter = async (config) => {
+      if (config.url?.endsWith('/events')) {
+        return reply(
+          {
+            data: [
+              {
+                id: claimed ? 2 : 1,
+                type: claimed ? 'claimed' : 'created',
+                label: claimed ? 'รับงาน' : 'แจ้งซ่อมใหม่',
+                actor_role: claimed ? 'junior_technician' : 'user',
+                actor: { id: claimed ? 9 : 1, name: claimed ? 'Technician' : 'Requester' },
+                from_status: claimed ? 'new' : null,
+                to_status: claimed ? 'in_progress' : 'new',
+                from_level: claimed ? 'junior' : null,
+                to_level: 'junior',
+                from_assignee_id: null,
+                to_assignee_id: claimed ? 9 : null,
+                information_request_id: null,
+                note: null,
+                metadata: claimed ? {} : { ticket_no: 'RPR-1' },
+                created_at: '2026-11-23T03:00:00.000Z',
+              },
+            ],
+            meta: { current_page: 1, last_page: 1, per_page: 20, total: 1 },
+          },
+          config,
+        )
+      }
+      if (config.method === 'post') claimed = true
+      return reply({ data: makeTicket(1, { status: claimed ? 'in_progress' : 'new' }) }, config)
+    }
+    const { wrapper } = await openDetail(user(), false)
+    expect(wrapper.get('ol').text()).toContain('แจ้งซ่อมใหม่')
+    const claim = wrapper.findAll('button').find((button) => button.text() === 'รับงาน')
+    await claim?.trigger('click')
+    await flushPromises()
+    expect(wrapper.get('ol').text()).toContain('รับงาน')
+    expect(wrapper.get('ol').text()).not.toContain('แจ้งซ่อมใหม่')
+  })
+
   it('lets a technician claim a queued ticket assigned to them', async () => {
     http.defaults.adapter = async (config) =>
       reply(

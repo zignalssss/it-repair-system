@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
+import TicketHistory from '@/components/TicketHistory.vue'
 import { useRoute } from 'vue-router'
 import { errorMessage } from '@/lib/http'
 import { useAuthStore } from '@/stores/auth'
@@ -14,6 +15,7 @@ let revision = 0
 const ticket = ref<Ticket | null>(null)
 const loading = ref(true)
 const busy = ref(false)
+const historyRevision = ref(0)
 const error = ref('')
 
 const canCancel = computed(
@@ -92,7 +94,10 @@ async function run(action: () => Promise<Ticket>) {
 
   try {
     const result = await action()
-    if (revision === currentRevision) ticket.value = result
+    if (revision === currentRevision) {
+      ticket.value = result
+      historyRevision.value++
+    }
   } catch (e) {
     if (revision === currentRevision) error.value = errorMessage(e)
   } finally {
@@ -139,6 +144,8 @@ async function run(action: () => Promise<Ticket>) {
           รับงาน
         </button>
       </div>
+
+      <TicketHistory :key="`${ticket.id}-${historyRevision}`" :ticket-id="ticket.id" />
     </template>
 
     <p v-if="error" role="alert" class="mt-4 text-red-700">{{ error }}</p>
