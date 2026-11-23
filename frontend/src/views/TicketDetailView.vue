@@ -3,7 +3,8 @@ import { computed, ref, watch } from 'vue'
 import { isAxiosError } from 'axios'
 import TicketHistory from '@/components/TicketHistory.vue'
 import TicketInformation from '@/components/TicketInformation.vue'
-import { useRoute } from 'vue-router'
+import TicketHandoff from '@/components/TicketHandoff.vue'
+import { useRoute, useRouter } from 'vue-router'
 import { errorMessage } from '@/lib/http'
 import { useAuthStore } from '@/stores/auth'
 import {
@@ -15,6 +16,7 @@ import {
 } from '@/services/tickets'
 
 const route = useRoute()
+const router = useRouter()
 const auth = useAuthStore()
 
 const ticketId = computed(() => Number(route.params.id))
@@ -24,6 +26,7 @@ const ticket = ref<Ticket | null>(null)
 const loading = ref(true)
 const busy = ref(false)
 const historyRevision = ref(0)
+const handoffCompleted = ref(false)
 const error = ref('')
 const workLogBody = ref('')
 const workLogFeedback = ref<{ type: 'success' | 'error'; message: string } | null>(null)
@@ -77,6 +80,7 @@ watch(
     loading.value = true
     busy.value = false
     error.value = ''
+    handoffCompleted.value = false
     workLogBody.value = ''
     workLogFeedback.value = null
 
@@ -141,6 +145,19 @@ async function saveWorkLog() {
   }
 }
 
+async function completeHandoff(updated: Ticket) {
+  const currentRevision = revision
+  handoffCompleted.value = true
+  error.value = ''
+  try {
+    await router.replace({ name: 'home', query: { handoff: updated.status } })
+  } catch {
+    if (revision === currentRevision) {
+      error.value = 'ส่งต่อสำเร็จแล้ว แต่เปิดหน้ารายการไม่สำเร็จ กรุณากดกลับรายการ'
+    }
+  }
+}
+
 function updateTicket(updated: Ticket) {
   ticket.value = updated
   historyRevision.value++
@@ -171,6 +188,11 @@ async function run(action: () => Promise<Ticket>) {
     <RouterLink to="/" class="text-sm underline">← กลับ</RouterLink>
 
     <p v-if="loading" class="mt-4">กำลังโหลด...</p>
+
+    <div v-else-if="handoffCompleted" class="mt-4 space-y-3">
+      <p role="status" class="text-sm text-green-800">ส่งต่องานสำเร็จแล้ว กำลังกลับหน้ารายการ</p>
+      <RouterLink :to="{ name: 'home' }" class="text-sm underline">กลับรายการใบแจ้งซ่อม</RouterLink>
+    </div>
 
     <template v-else-if="ticket">
       <h1 class="mt-4 text-xl font-semibold">{{ ticket.ticket_no }} · {{ ticket.title }}</h1>
@@ -246,6 +268,13 @@ async function run(action: () => Promise<Ticket>) {
         :ticket="ticket"
         v-model:busy="busy"
         @updated="updateTicket"
+      />
+
+      <TicketHandoff
+        :key="ticket.id"
+        :ticket="ticket"
+        v-model:busy="busy"
+        @completed="completeHandoff"
       />
 
       <TicketHistory :key="`${ticket.id}-${historyRevision}`" :ticket-id="ticket.id" />

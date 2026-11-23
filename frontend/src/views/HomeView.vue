@@ -1,12 +1,18 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { computed, onMounted, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { errorMessage as apiErrorMessage } from '@/lib/http'
 import { listTickets, type Ticket, type TicketPagination } from '@/services/tickets'
 
 const auth = useAuthStore()
 const router = useRouter()
+const route = useRoute()
+const handoffMessage = computed(() => {
+  if (route.query.handoff === 'escalated') return 'ส่งต่อช่างอาวุโสแล้ว งานอยู่ในคิวรอรับเรื่อง'
+  if (route.query.handoff === 'returned') return 'ส่งกลับช่างระดับต้นแล้ว งานอยู่ในคิวรอรับเรื่อง'
+  return ''
+})
 
 const loggingOut = ref(false)
 const errorMessage = ref('')
@@ -86,6 +92,14 @@ async function handleLogout() {
         class="mb-8 border-l-2 border-red-600 bg-red-50 px-3 py-2.5 text-sm text-red-800"
       >
         {{ errorMessage }}
+      </p>
+
+      <p
+        v-if="handoffMessage"
+        role="status"
+        class="mb-6 border-l-2 border-green-700 bg-green-50 px-3 py-2.5 text-sm text-green-900"
+      >
+        {{ handoffMessage }}
       </p>
 
       <p class="text-sm text-stone-500">สวัสดี</p>

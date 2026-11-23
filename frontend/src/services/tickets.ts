@@ -188,3 +188,18 @@ export async function respondTicketInformation(
   )
   return response.data.data
 }
+
+export async function escalateTicket(ticketId: number, body: string): Promise<Ticket> {
+  const response = await http.post<{ data: Ticket }>(`/api/v1/tickets/${ticketId}/escalate`, {
+    body,
+  })
+  return response.data.data
+}
+
+export async function returnTicketToJunior(ticketId: number, body: string): Promise<Ticket> {
+  const response = await http.post<{ data: Ticket }>(
+    `/api/v1/tickets/${ticketId}/return-to-junior`,
+    { body },
+  )
+  return response.data.data
+}
