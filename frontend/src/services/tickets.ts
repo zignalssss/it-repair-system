@@ -145,3 +145,11 @@ export async function listTicketEvents(ticketId: number, page = 1): Promise<Tick
 
   return response.data
 }
+
+export async function addTicketWorkLog(ticketId: number, body: string): Promise<TicketNote> {
+  const response = await http.post<{ data: TicketNote }>(`/api/v1/tickets/${ticketId}/work-logs`, {
+    body,
+  })
+
+  return response.data.data
+}

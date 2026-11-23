@@ -1,10 +1,17 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
+import { isAxiosError } from 'axios'
 import TicketHistory from '@/components/TicketHistory.vue'
 import { useRoute } from 'vue-router'
 import { errorMessage } from '@/lib/http'
 import { useAuthStore } from '@/stores/auth'
-import { cancelTicket, claimTicket, getTicket, type Ticket } from '@/services/tickets'
+import {
+  addTicketWorkLog,
+  cancelTicket,
+  claimTicket,
+  getTicket,
+  type Ticket,
+} from '@/services/tickets'
 
 const route = useRoute()
 const auth = useAuthStore()
@@ -17,6 +24,8 @@ const loading = ref(true)
 const busy = ref(false)
 const historyRevision = ref(0)
 const error = ref('')
+const workLogBody = ref('')
+const workLogFeedback = ref<{ type: 'success' | 'error'; message: string } | null>(null)
 
 const canCancel = computed(
   () =>
@@ -45,6 +54,16 @@ const canClaim = computed(() => {
   )
 })
 
+const canAddWorkLog = computed(() => {
+  const user = auth.user
+  return (
+    user?.is_active === true &&
+    (user.role === 'junior_technician' || user.role === 'senior_technician') &&
+    ticket.value?.assignee?.id === user.id &&
+    ticket.value.status === 'in_progress'
+  )
+})
+
 watch(
   ticketId,
   async (id, _previousId, onCleanup) => {
@@ -57,6 +76,8 @@ watch(
     loading.value = true
     busy.value = false
     error.value = ''
+    workLogBody.value = ''
+    workLogFeedback.value = null
 
     try {
       const result = await getTicket(id)
@@ -83,6 +104,40 @@ async function claim() {
   if (!ticket.value || !canClaim.value) return
   const id = ticket.value.id
   await run(() => claimTicket(id))
+}
+
+async function saveWorkLog() {
+  if (busy.value || !canAddWorkLog.value || !ticket.value) return
+
+  const body = workLogBody.value.trim()
+  if (!body) {
+    workLogFeedback.value = { type: 'error', message: 'กรุณาระบุรายละเอียดการซ่อม' }
+    return
+  }
+
+  const id = ticket.value.id
+  const currentRevision = revision
+  busy.value = true
+  workLogFeedback.value = null
+
+  try {
+    await addTicketWorkLog(id, body)
+    if (revision === currentRevision) {
+      workLogBody.value = ''
+      workLogFeedback.value = { type: 'success', message: 'บันทึกการซ่อมแล้ว' }
+      historyRevision.value++
+    }
+  } catch (error) {
+    if (revision === currentRevision) {
+      const validationMessage =
+        isAxiosError<{ errors?: { body?: string[] } }>(error) && error.response?.status === 422
+          ? error.response.data.errors?.body?.[0]
+          : undefined
+      workLogFeedback.value = { type: 'error', message: validationMessage ?? errorMessage(error) }
+    }
+  } finally {
+    if (revision === currentRevision) busy.value = false
+  }
 }
 
 async function run(action: () => Promise<Ticket>) {
@@ -144,6 +199,42 @@ async function run(action: () => Promise<Ticket>) {
           รับงาน
         </button>
       </div>
+
+      <form
+        v-if="canAddWorkLog"
+        class="mt-8 border-t border-stone-200 pt-6"
+        aria-label="บันทึกการซ่อม"
+        @submit.prevent="saveWorkLog"
+      >
+        <h2 class="text-lg font-semibold">บันทึกการซ่อม</h2>
+        <fieldset :disabled="busy" class="mt-4 space-y-3">
+          <label for="work-log-body" class="block text-sm font-medium">รายละเอียดการซ่อม</label>
+          <textarea
+            id="work-log-body"
+            v-model="workLogBody"
+            required
+            maxlength="10000"
+            rows="4"
+            :aria-describedby="workLogFeedback ? 'work-log-feedback' : undefined"
+            class="block w-full border border-stone-300 p-2 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-60"
+          ></textarea>
+          <p
+            v-if="workLogFeedback"
+            id="work-log-feedback"
+            :role="workLogFeedback.type === 'error' ? 'alert' : 'status'"
+            :class="workLogFeedback.type === 'error' ? 'text-red-700' : 'text-green-800'"
+            class="text-sm"
+          >
+            {{ workLogFeedback.message }}
+          </p>
+          <button
+            type="submit"
+            class="border bg-stone-900 px-4 py-2 text-sm text-white focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-50"
+          >
+            {{ busy ? 'กำลังบันทึก...' : 'บันทึกการซ่อม' }}
+          </button>
+        </fieldset>
+      </form>
 
       <TicketHistory :key="`${ticket.id}-${historyRevision}`" :ticket-id="ticket.id" />
     </template>
