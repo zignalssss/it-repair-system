@@ -154,5 +154,10 @@ class RepairTicketPolicy
     {
         return $this->isAssignedTechnician($user, $ticket);
     }
+
+    public function viewReports(User $user): bool
+    {
+        return $this->isManager($user);
+    }
 }
 

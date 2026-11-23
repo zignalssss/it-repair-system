@@ -73,22 +73,6 @@ class TicketEventResource extends JsonResource
 
     private function label(): string
     {
-        return match ($this->type) {
-            'created' => 'แจ้งซ่อมใหม่',
-            'claimed' => 'รับงาน',
-            'cancelled' => 'ยกเลิกใบงาน',
-            'note_added' => 'บันทึกการซ่อม',
-            'info_requested' => 'ขอข้อมูลเพิ่มเติม',
-            'info_responded' => 'ตอบข้อมูลเพิ่มเติม',
-            'escalated' => 'ส่งต่อช่างอาวุโส',
-            'returned' => 'ส่งกลับช่างระดับต้น',
-            'equipment_requested' => 'ขออุปกรณ์',
-            'equipment_approved' => 'อนุมัติอุปกรณ์',
-            'equipment_rejected' => 'ปฏิเสธอุปกรณ์',
-            'assigned' => 'มอบหมายงาน',
-            'priority_changed' => 'เปลี่ยนความเร่งด่วน',
-            'resolved' => 'แก้ไขเสร็จสิ้น',
-            default => 'อัปเดตใบงาน',
-        };
+        return $this->resource->label();
     }
 }

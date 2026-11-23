@@ -4,6 +4,7 @@ use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\RepairTicketController;
 use App\Http\Controllers\AttachmentController;
 use App\Http\Middleware\EnsureUserIsActive;
+use App\Http\Controllers\ReportController;
 use App\Http\Controllers\EquipmentRequestController;
 use App\Http\Controllers\TicketManagementController;
 use App\Http\Controllers\TicketResolutionController;
@@ -68,6 +69,10 @@ Route::prefix('v1')->group(function () {
             Route::post('/tickets/{ticket}/resolve', [TicketResolutionController::class,'resolve',]);
 
             Route::get('/tickets/{ticket}/events', [TicketEventController::class,'index',]);
+
+            Route::get('/reports/summary', [ReportController::class,'summary',]);
+
+            Route::get('/reports/tickets/{ticket}/pdf', [ReportController::class,'ticketPdf',]);
         });
     });
 });
