@@ -34,6 +34,12 @@ const router = createRouter({
       },
     },
     {
+      path: '/reports',
+      name: 'manager-reports',
+      component: () => import('@/views/ManagerReportsView.vue'),
+      meta: { requiresAuth: true, requiresManager: true },
+    },
+    {
       path: '/:pathMatch(.*)*',
       redirect: '/',
     },
@@ -60,6 +66,10 @@ router.beforeEach(async (to) => {
 
   if (to.meta.requiresAuth && !auth.isAuthenticated) {
     return { name: 'login' }
+  }
+
+  if (to.meta.requiresManager && (auth.user?.role !== 'it_manager' || !auth.user.is_active)) {
+    return { name: 'home' }
   }
 
   if (to.name === 'login' && auth.isAuthenticated) {

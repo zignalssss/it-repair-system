@@ -155,6 +155,7 @@ async function handleLogout() {
       <section class="mt-10">
         <div class="flex items-center justify-between">
           <h2 class="text-lg font-semibold">ใบแจ้งซ่อม</h2>
+          <RouterLink v-if="auth.user.role === 'it_manager' && auth.user.is_active" :to="{ name: 'manager-reports' }" class="border px-3 py-1.5 text-sm">ดูรายงาน</RouterLink>
           <RouterLink
             v-if="auth.user.role === 'user'"
             :to="{ name: 'ticket-create' }"

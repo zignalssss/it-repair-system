@@ -62,7 +62,6 @@ async function submit() {
 
 <template>
   <main class="grid min-h-dvh lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)]">
-    <!-- Side panel: identity + workflow, collapses to a strip on small screens -->
     <section
       class="relative flex flex-col justify-between overflow-hidden bg-stone-950 px-6 py-6 text-stone-100 sm:px-10 lg:py-12"
     >

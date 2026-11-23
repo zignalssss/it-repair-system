@@ -66,7 +66,7 @@ function api(
   const posts: { url: string | undefined; data: unknown }[] = []
   let saved = false
   http.defaults.adapter = async (config) => {
-    if (config.url?.endsWith('/equipment-requests'))
+    if (config.url?.endsWith('/equipment-requests') || config.url === '/api/v1/technicians')
       return reply({ data: [], meta: { current_page: 1, last_page: 1, per_page: 20, total: 0 } }, config)
     if (config.url?.endsWith('/events'))
       return reply(
@@ -147,7 +147,7 @@ describe('work log form', () => {
     async ({ actor, fields }) => {
       api(fields)
       const { wrapper } = await open(actor)
-      expect(wrapper.find('textarea').exists()).toBe(false)
+      expect(wrapper.find('#work-log-body').exists()).toBe(false)
     },
   )
 

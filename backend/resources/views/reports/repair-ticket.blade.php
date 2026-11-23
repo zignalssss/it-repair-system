@@ -202,14 +202,14 @@
     <p>
         สถานะ:
         {{ $statusLabels[$event->from_status?->value] ?? '-' }}
-        →
+        เป็น
         {{ $statusLabels[$event->to_status?->value] ?? '-' }}
     </p>
 
     <p>
         ระดับ:
         {{ $levelLabels[$event->from_level?->value] ?? '-' }}
-        →
+        เป็น
         {{ $levelLabels[$event->to_level?->value] ?? '-' }}
     </p>
 
@@ -217,7 +217,7 @@
         <p>
             ผู้รับผิดชอบ:
             {{ $userNames->get($event->from_assignee_id, '-') }}
-            →
+            เป็น
             {{ $userNames->get($event->to_assignee_id, '-') }}
         </p>
     @endif

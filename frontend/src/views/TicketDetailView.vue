@@ -5,6 +5,8 @@ import TicketHistory from '@/components/TicketHistory.vue'
 import TicketInformation from '@/components/TicketInformation.vue'
 import TicketHandoff from '@/components/TicketHandoff.vue'
 import TicketEquipment from '@/components/TicketEquipment.vue'
+import TicketResolution from '@/components/TicketResolution.vue'
+import TicketManagement from '@/components/TicketManagement.vue'
 import { useRoute, useRouter } from 'vue-router'
 import { errorMessage } from '@/lib/http'
 import { useAuthStore } from '@/stores/auth'
@@ -284,6 +286,18 @@ async function run(action: () => Promise<Ticket>) {
         v-model:busy="busy"
         @updated="updateTicket"
       />
+
+      <TicketResolution :key="ticket.id" :ticket="ticket" v-model:busy="busy" @updated="updateTicket" />
+      <TicketManagement :key="ticket.id" :ticket="ticket" v-model:busy="busy" @updated="updateTicket" />
+
+      <section v-if="ticket.status === 'resolved'" aria-label="ผลการปิดงาน" class="mt-8 border-t border-stone-200 pt-6">
+        <h2 class="text-lg font-semibold">ปิดงานแล้ว</h2>
+        <p class="mt-2 text-sm">ผู้ปิดงาน {{ ticket.resolved_by?.name ?? '-' }} · {{ ticket.resolved_at ?? '-' }}</p>
+        <h3 class="mt-3 font-medium">อะไหล่ที่ใช้จริง</h3>
+        <ul v-if="ticket.parts_used?.length" class="mt-2 text-sm"><li v-for="part in ticket.parts_used" :key="part.id">{{ part.name }} · จำนวน {{ part.quantity }}</li></ul>
+        <p v-else class="mt-2 text-sm">ไม่ได้บันทึกอะไหล่ที่ใช้จริง</p>
+      </section>
+      <a v-if="auth.user?.role === 'it_manager' && auth.user.is_active" :href="`/api/v1/reports/tickets/${ticket.id}/pdf`" download class="mt-6 inline-block border px-3 py-2 text-sm">ดาวน์โหลดใบแจ้งซ่อม PDF</a>
 
       <TicketHistory :key="`${ticket.id}-${historyRevision}`" :ticket-id="ticket.id" />
     </template>

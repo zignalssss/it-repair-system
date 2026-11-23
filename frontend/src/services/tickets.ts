@@ -25,6 +25,9 @@ export interface Ticket {
   department?: { id: number; code: string; name: string } | null
   assignee?: { id: number; name: string } | null
   created_at: string
+  resolved_by?: { id: number; name: string } | null
+  resolved_at?: string | null
+  parts_used?: { id: number; name: string; quantity: number; recorded_at: string }[]
   pending_information_request?: PendingInformationRequest | null
 }
 
@@ -227,9 +230,9 @@ export interface NewEquipmentRequest {
   reason: string
   items: { name: string; quantity: number; estimated_unit_price: string }[]
 }
-export async function listEquipmentRequests(ticketId: number, page = 1): Promise<EquipmentPage> {
+export async function listEquipmentRequests(ticketId: number, page = 1, status?: EquipmentStatus): Promise<EquipmentPage> {
   const response = await http.get<EquipmentPage>(`/api/v1/tickets/${ticketId}/equipment-requests`, {
-    params: { page },
+    params: { page, ...(status ? { status } : {}) },
   })
   if (!Array.isArray(response.data.data)) throw new Error('รูปแบบรายการอุปกรณ์ไม่ถูกต้อง')
   return response.data
