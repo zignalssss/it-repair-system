@@ -92,15 +92,10 @@ async function submit() {
 </script>
 
 <template>
-  <form
-    v-if="mode !== 'none'"
-    aria-label="ส่งต่องาน"
-    class="mt-8 border-t border-stone-200 pt-6"
-    @submit.prevent="submit"
-  >
-    <h2 class="text-lg font-semibold">{{ buttonLabel }}</h2>
+  <form v-if="mode !== 'none'" aria-label="ส่งต่องาน" class="panel" @submit.prevent="submit">
+    <h2 class="panel-title">{{ buttonLabel }}</h2>
     <fieldset :disabled="busy || feedback?.type === 'success'" class="mt-4 space-y-3">
-      <label for="handoff-body" class="block text-sm font-medium">{{
+      <label for="handoff-body" class="label">{{
         mode === 'escalate' ? 'เหตุผลและรายละเอียดที่ส่งต่อ' : 'คำแนะนำให้ช่างระดับต้น'
       }}</label>
       <textarea
@@ -110,12 +105,9 @@ async function submit() {
         maxlength="10000"
         rows="4"
         :aria-describedby="feedback ? 'handoff-feedback' : undefined"
-        class="block w-full border border-stone-300 p-2 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-60"
+        class="field"
       ></textarea>
-      <button
-        type="submit"
-        class="border bg-stone-900 px-4 py-2 text-sm text-white focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-50"
-      >
+      <button type="submit" class="btn">
         {{ busy ? 'กำลังส่งต่อ...' : buttonLabel }}
       </button>
     </fieldset>
@@ -123,7 +115,7 @@ async function submit() {
       v-if="feedback"
       id="handoff-feedback"
       :role="feedback.type === 'error' ? 'alert' : 'status'"
-      :class="feedback.type === 'error' ? 'text-red-700' : 'text-green-800'"
+      :class="feedback.type === 'error' ? 'note-error' : 'note-ok'"
       class="mt-3 text-sm"
     >
       {{ feedback.message }}

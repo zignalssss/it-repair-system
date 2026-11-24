@@ -7,6 +7,10 @@ import TicketHandoff from '@/components/TicketHandoff.vue'
 import TicketEquipment from '@/components/TicketEquipment.vue'
 import TicketResolution from '@/components/TicketResolution.vue'
 import TicketManagement from '@/components/TicketManagement.vue'
+import TrackingStrip from '@/components/TrackingStrip.vue'
+import PriorityBadge from '@/components/PriorityBadge.vue'
+import { ArrowLeft, Download } from 'lucide-vue-next'
+import { levelLabels, passedStops, statusLabels } from '@/lib/ticketLabels'
 import { useRoute, useRouter } from 'vue-router'
 import { errorMessage } from '@/lib/http'
 import { useAuthStore } from '@/stores/auth'
@@ -16,6 +20,8 @@ import {
   claimTicket,
   getTicket,
   type Ticket,
+  type EquipmentRequest,
+  type TicketEvent,
 } from '@/services/tickets'
 
 const route = useRoute()
@@ -29,10 +35,32 @@ const ticket = ref<Ticket | null>(null)
 const loading = ref(true)
 const busy = ref(false)
 const historyRevision = ref(0)
+// Stops proven by the history page and by approved equipment requests the viewer can see.
+const historyPassed = ref<ReadonlySet<number>>(new Set())
+const equipmentApproved = ref(false)
+const passed = computed<ReadonlySet<number>>(() =>
+  equipmentApproved.value ? new Set([...historyPassed.value, 3]) : historyPassed.value,
+)
+function trackHistory(events: TicketEvent[]) {
+  historyPassed.value = passedStops(events)
+}
+function trackEquipment(requests: EquipmentRequest[]) {
+  equipmentApproved.value = requests.some((request) => request.status === 'approved')
+}
 const handoffCompleted = ref(false)
 const error = ref('')
 const workLogBody = ref('')
 const workLogFeedback = ref<{ type: 'success' | 'error'; message: string } | null>(null)
+const dateFormat = new Intl.DateTimeFormat('th-TH', {
+  dateStyle: 'medium',
+  timeStyle: 'short',
+  timeZone: 'Asia/Bangkok',
+})
+function formatDate(value: string | null | undefined) {
+  if (!value) return '-'
+  const date = new Date(value)
+  return Number.isNaN(date.getTime()) ? value : dateFormat.format(date)
+}
 
 const canCancel = computed(
   () =>
@@ -80,6 +108,8 @@ watch(
     })
 
     ticket.value = null
+    historyPassed.value = new Set()
+    equipmentApproved.value = false
     loading.value = true
     busy.value = false
     error.value = ''
@@ -187,121 +217,210 @@ async function run(action: () => Promise<Ticket>) {
 </script>
 
 <template>
-  <main class="mx-auto max-w-xl p-6">
-    <RouterLink to="/" class="text-sm underline">← กลับ</RouterLink>
+  <main class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+    <RouterLink
+      to="/"
+      class="inline-flex items-center gap-1.5 text-sm text-ink-600 hover:text-ink-950"
+    >
+      <ArrowLeft class="size-4" aria-hidden="true" />
+      กลับรายการใบแจ้งซ่อม
+    </RouterLink>
 
-    <p v-if="loading" class="mt-4">กำลังโหลด...</p>
+    <p v-if="loading" role="status" class="hint mt-8">กำลังโหลดใบแจ้งซ่อม...</p>
 
-    <div v-else-if="handoffCompleted" class="mt-4 space-y-3">
-      <p role="status" class="text-sm text-green-800">ส่งต่องานสำเร็จแล้ว กำลังกลับหน้ารายการ</p>
+    <div v-else-if="handoffCompleted" class="panel space-y-3">
+      <p role="status" class="note-ok">ส่งต่องานสำเร็จแล้ว กำลังกลับหน้ารายการ</p>
       <RouterLink :to="{ name: 'home' }" class="text-sm underline">กลับรายการใบแจ้งซ่อม</RouterLink>
     </div>
 
     <template v-else-if="ticket">
-      <h1 class="mt-4 text-xl font-semibold">{{ ticket.ticket_no }} · {{ ticket.title }}</h1>
+      <header class="mt-4 flex flex-wrap items-start justify-between gap-4">
+        <div class="min-w-0">
+          <h1 class="text-2xl font-semibold break-words text-ink-950">
+            <span class="code block text-sm font-semibold text-ink-600">{{
+              ticket.ticket_no
+            }}</span>
+            {{ ticket.title }}
+          </h1>
+          <p class="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
+            <span class="font-semibold">{{ statusLabels[ticket.status] ?? ticket.status }}</span>
+            <PriorityBadge :priority="ticket.priority" />
+            <span class="text-ink-600">{{
+              levelLabels[ticket.support_level] ?? ticket.support_level
+            }}</span>
+          </p>
+        </div>
+        <div class="flex flex-wrap gap-2">
+          <button
+            v-if="canClaim"
+            type="button"
+            :disabled="busy"
+            class="btn btn-primary"
+            @click="claim"
+          >
+            รับงาน
+          </button>
+          <button v-if="canCancel" type="button" :disabled="busy" class="btn" @click="cancel">
+            ยกเลิกใบงาน
+          </button>
+          <a
+            v-if="auth.user?.role === 'it_manager' && auth.user.is_active"
+            :href="`/api/v1/reports/tickets/${ticket.id}/pdf`"
+            download
+            class="btn"
+          >
+            <Download class="size-4" aria-hidden="true" />
+            ดาวน์โหลดใบแจ้งซ่อม PDF
+          </a>
+        </div>
+      </header>
 
-      <dl class="mt-4 grid grid-cols-[8rem_1fr] gap-2">
-        <dt>สถานะ</dt>
-        <dd>{{ ticket.status }}</dd>
-        <dt>ความสำคัญ</dt>
-        <dd>{{ ticket.priority }}</dd>
-        <dt>ระดับ</dt>
-        <dd>{{ ticket.support_level }}</dd>
-        <dt>ผู้แจ้ง</dt>
-        <dd>{{ ticket.requester?.name ?? '-' }}</dd>
-        <dt>แผนก</dt>
-        <dd>{{ ticket.department?.name ?? '-' }}</dd>
-        <dt>ผู้รับผิดชอบ</dt>
-        <dd>{{ ticket.assignee?.name ?? 'ยังไม่มี' }}</dd>
-        <dt>สถานที่</dt>
-        <dd>{{ ticket.location ?? '-' }}</dd>
-        <dt>รหัสอุปกรณ์</dt>
-        <dd>{{ ticket.asset_label ?? '-' }}</dd>
-        <dt>รายละเอียด</dt>
-        <dd class="whitespace-pre-line">{{ ticket.description }}</dd>
-      </dl>
+      <p v-if="error" role="alert" class="banner-error mt-4">{{ error }}</p>
 
-      <div class="mt-6 flex gap-2">
-        <button v-if="canCancel" :disabled="busy" class="border px-4 py-2" @click="cancel">
-          ยกเลิกใบงาน
-        </button>
-        <button v-if="canClaim" :disabled="busy" class="border px-4 py-2" @click="claim">
-          รับงาน
-        </button>
+      <div class="panel">
+        <TrackingStrip :ticket="ticket" :passed="passed" large />
       </div>
 
-      <form
-        v-if="canAddWorkLog"
-        class="mt-8 border-t border-stone-200 pt-6"
-        aria-label="บันทึกการซ่อม"
-        @submit.prevent="saveWorkLog"
+      <div
+        class="grid items-start gap-x-6 lg:grid-cols-[minmax(0,1fr)_24rem] lg:grid-rows-[auto_1fr]"
       >
-        <h2 class="text-lg font-semibold">บันทึกการซ่อม</h2>
-        <fieldset :disabled="busy" class="mt-4 space-y-3">
-          <label for="work-log-body" class="block text-sm font-medium">รายละเอียดการซ่อม</label>
-          <textarea
-            id="work-log-body"
-            v-model="workLogBody"
-            required
-            maxlength="10000"
-            rows="4"
-            :aria-describedby="workLogFeedback ? 'work-log-feedback' : undefined"
-            class="block w-full border border-stone-300 p-2 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-60"
-          ></textarea>
-          <p
-            v-if="workLogFeedback"
-            id="work-log-feedback"
-            :role="workLogFeedback.type === 'error' ? 'alert' : 'status'"
-            :class="workLogFeedback.type === 'error' ? 'text-red-700' : 'text-green-800'"
-            class="text-sm"
+        <div class="min-w-0 lg:col-start-1 lg:row-start-1">
+          <section class="panel" aria-label="รายละเอียดใบแจ้งซ่อม">
+            <h2 class="panel-title">รายละเอียด</h2>
+            <p class="mt-2 text-sm leading-relaxed break-words whitespace-pre-line text-ink-950">
+              {{ ticket.description }}
+            </p>
+            <dl
+              class="mt-5 grid gap-x-6 gap-y-3 border-t border-ink-100 pt-4 text-sm sm:grid-cols-2"
+            >
+              <div>
+                <dt class="hint">ผู้แจ้ง</dt>
+                <dd class="font-medium">{{ ticket.requester?.name ?? '-' }}</dd>
+              </div>
+              <div>
+                <dt class="hint">แผนก</dt>
+                <dd class="font-medium">{{ ticket.department?.name ?? '-' }}</dd>
+              </div>
+              <div>
+                <dt class="hint">ผู้รับผิดชอบ</dt>
+                <dd class="font-medium">{{ ticket.assignee?.name ?? 'ยังไม่มี' }}</dd>
+              </div>
+              <div>
+                <dt class="hint">แจ้งเมื่อ</dt>
+                <dd class="code">{{ formatDate(ticket.created_at) }}</dd>
+              </div>
+              <div>
+                <dt class="hint">สถานที่</dt>
+                <dd class="font-medium break-words">{{ ticket.location ?? '-' }}</dd>
+              </div>
+              <div>
+                <dt class="hint">รหัสอุปกรณ์</dt>
+                <dd class="code break-all">{{ ticket.asset_label ?? '-' }}</dd>
+              </div>
+            </dl>
+          </section>
+
+          <section v-if="ticket.status === 'resolved'" aria-label="ผลการปิดงาน" class="panel">
+            <h2 class="panel-title text-scan-700">ปิดงานแล้ว</h2>
+            <p class="mt-2 text-sm">
+              ผู้ปิดงาน {{ ticket.resolved_by?.name ?? '-' }} ·
+              <span class="code">{{ formatDate(ticket.resolved_at) }}</span>
+            </p>
+            <h3 class="mt-4 text-sm font-semibold">อะไหล่ที่ใช้จริง</h3>
+            <ul v-if="ticket.parts_used?.length" class="mt-2 divide-y divide-ink-100 text-sm">
+              <li
+                v-for="part in ticket.parts_used"
+                :key="part.id"
+                class="flex justify-between gap-4 py-1.5"
+              >
+                <span class="break-words">{{ part.name }}</span>
+                <span class="shrink-0"
+                  >จำนวน <span class="code">{{ part.quantity }}</span></span
+                >
+              </li>
+            </ul>
+            <p v-else class="hint mt-2">ไม่ได้บันทึกอะไหล่ที่ใช้จริง</p>
+          </section>
+        </div>
+
+        <aside class="min-w-0 lg:sticky lg:top-4 lg:col-start-2 lg:row-span-2 lg:row-start-1">
+          <TicketHistory
+            :key="`${ticket.id}-${historyRevision}`"
+            :ticket-id="ticket.id"
+            @loaded="trackHistory"
+          />
+        </aside>
+
+        <div class="min-w-0 lg:col-start-1 lg:row-start-2">
+          <form
+            v-if="canAddWorkLog"
+            class="panel"
+            aria-label="บันทึกการซ่อม"
+            @submit.prevent="saveWorkLog"
           >
-            {{ workLogFeedback.message }}
-          </p>
-          <button
-            type="submit"
-            class="border bg-stone-900 px-4 py-2 text-sm text-white focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-50"
-          >
-            {{ busy ? 'กำลังบันทึก...' : 'บันทึกการซ่อม' }}
-          </button>
-        </fieldset>
-      </form>
+            <h2 class="panel-title">บันทึกการซ่อม</h2>
+            <fieldset :disabled="busy" class="mt-3 space-y-3">
+              <label for="work-log-body" class="label">รายละเอียดการซ่อม</label>
+              <textarea
+                id="work-log-body"
+                v-model="workLogBody"
+                required
+                maxlength="10000"
+                rows="4"
+                :aria-describedby="workLogFeedback ? 'work-log-feedback' : undefined"
+                class="field"
+              ></textarea>
+              <p
+                v-if="workLogFeedback"
+                id="work-log-feedback"
+                :role="workLogFeedback.type === 'error' ? 'alert' : 'status'"
+                :class="workLogFeedback.type === 'error' ? 'note-error' : 'note-ok'"
+              >
+                {{ workLogFeedback.message }}
+              </p>
+              <button type="submit" class="btn btn-primary">
+                {{ busy ? 'กำลังบันทึก...' : 'บันทึกการซ่อม' }}
+              </button>
+            </fieldset>
+          </form>
 
-      <TicketInformation
-        :key="ticket.id"
-        :ticket="ticket"
-        v-model:busy="busy"
-        @updated="updateTicket"
-      />
-
-      <TicketHandoff
-        :key="ticket.id"
-        :ticket="ticket"
-        v-model:busy="busy"
-        @completed="completeHandoff"
-      />
-
-      <TicketEquipment
-        :key="ticket.id"
-        :ticket="ticket"
-        v-model:busy="busy"
-        @updated="updateTicket"
-      />
-
-      <TicketResolution :key="ticket.id" :ticket="ticket" v-model:busy="busy" @updated="updateTicket" />
-      <TicketManagement :key="ticket.id" :ticket="ticket" v-model:busy="busy" @updated="updateTicket" />
-
-      <section v-if="ticket.status === 'resolved'" aria-label="ผลการปิดงาน" class="mt-8 border-t border-stone-200 pt-6">
-        <h2 class="text-lg font-semibold">ปิดงานแล้ว</h2>
-        <p class="mt-2 text-sm">ผู้ปิดงาน {{ ticket.resolved_by?.name ?? '-' }} · {{ ticket.resolved_at ?? '-' }}</p>
-        <h3 class="mt-3 font-medium">อะไหล่ที่ใช้จริง</h3>
-        <ul v-if="ticket.parts_used?.length" class="mt-2 text-sm"><li v-for="part in ticket.parts_used" :key="part.id">{{ part.name }} · จำนวน {{ part.quantity }}</li></ul>
-        <p v-else class="mt-2 text-sm">ไม่ได้บันทึกอะไหล่ที่ใช้จริง</p>
-      </section>
-      <a v-if="auth.user?.role === 'it_manager' && auth.user.is_active" :href="`/api/v1/reports/tickets/${ticket.id}/pdf`" download class="mt-6 inline-block border px-3 py-2 text-sm">ดาวน์โหลดใบแจ้งซ่อม PDF</a>
-
-      <TicketHistory :key="`${ticket.id}-${historyRevision}`" :ticket-id="ticket.id" />
+          <TicketInformation
+            :key="ticket.id"
+            :ticket="ticket"
+            v-model:busy="busy"
+            @updated="updateTicket"
+          />
+          <TicketHandoff
+            :key="ticket.id"
+            :ticket="ticket"
+            v-model:busy="busy"
+            @completed="completeHandoff"
+          />
+          <TicketEquipment
+            :key="ticket.id"
+            :ticket="ticket"
+            v-model:busy="busy"
+            @updated="updateTicket"
+            @loaded="trackEquipment"
+          />
+          <TicketResolution
+            :key="ticket.id"
+            :ticket="ticket"
+            v-model:busy="busy"
+            @updated="updateTicket"
+          />
+          <TicketManagement
+            :key="ticket.id"
+            :ticket="ticket"
+            v-model:busy="busy"
+            @updated="updateTicket"
+          />
+        </div>
+      </div>
     </template>
 
-    <p v-if="error" role="alert" class="mt-4 text-red-700">{{ error }}</p>
+    <p v-if="error && (!ticket || handoffCompleted)" role="alert" class="banner-error mt-6">
+      {{ error }}
+    </p>
   </main>
 </template>

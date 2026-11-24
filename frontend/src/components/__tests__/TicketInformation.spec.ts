@@ -407,7 +407,7 @@ describe('information Detail integration', () => {
     expect(posts).toEqual(['/api/v1/tickets/1/information-requests'])
     release()
     await flushPromises()
-    expect(wrapper.text()).toContain('waiting_info')
+    expect(wrapper.text()).toContain('รอข้อมูลเพิ่มเติม')
     expect(wrapper.find('form[aria-label="บันทึกการซ่อม"]').exists()).toBe(false)
     expect(wrapper.get('ol').text()).toContain('ขอภาพหน้าจอ')
   })

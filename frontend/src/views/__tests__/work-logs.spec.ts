@@ -169,7 +169,7 @@ describe('work log form', () => {
     await flushPromises()
     expect(posts).toEqual([{ url: '/api/v1/tickets/1/work-logs', data: '{"body":"ตรวจสายแล้ว"}' }])
     expect(wrapper.get('h1').text()).toContain('RPR-1')
-    expect(wrapper.text()).toContain('in_progress')
+    expect(wrapper.text()).toContain('กำลังดำเนินการ')
     expect(wrapper.get('textarea').element.value).toBe('')
     expect(wrapper.get('ol').text()).toContain('ตรวจสายแล้ว')
     expect(wrapper.get('[role="status"]').text()).toContain('บันทึกการซ่อมแล้ว')

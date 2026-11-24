@@ -4,12 +4,38 @@
   --font-sans: "IBM Plex Sans Thai", "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, monospace;
 
-  /* signal orange: the one accent, used like a maintenance tag */
+  /* signal orange: login page accent */
   --color-signal-50: oklch(0.97 0.02 55);
   --color-signal-200: oklch(0.88 0.08 52);
   --color-signal-500: oklch(0.68 0.18 45);
   --color-signal-600: oklch(0.6 0.18 42);
   --color-signal-700: oklch(0.5 0.15 40);
+
+  /* signed-in app: parcel-tracking world */
+  --font-ui: "Anuphan", "IBM Plex Sans Thai", ui-sans-serif, system-ui, sans-serif;
+  --font-code: "JetBrains Mono", ui-monospace, monospace;
+
+  --color-ground: #f3f3ef; /* label stock */
+  --color-ink-950: #121833;
+  --color-ink-900: #1d2547; /* postmark indigo */
+  --color-ink-800: #2a3360;
+  --color-ink-700: #3a4475;
+  --color-ink-600: #4f5884;
+  --color-ink-500: #666d93;
+  --color-ink-300: #b6bacf;
+  --color-ink-200: #d8dae4;
+  --color-ink-100: #ebecf1;
+  --color-ink-50: #f7f7f9;
+  --color-vermilion-50: #fcefeb;
+  --color-vermilion-200: #f3c4b8;
+  --color-vermilion-600: #c4381f; /* action + critical only */
+  --color-vermilion-700: #a32c16;
+  --color-kraft-50: #f7f0e4;
+  --color-kraft-500: #b98a4b; /* waiting on someone else */
+  --color-kraft-700: #74531f;
+  --color-scan-50: #e9f3ed;
+  --color-scan-600: #2f7d4f; /* closed */
+  --color-scan-700: #24623e;
 }
 
 body {
@@ -17,4 +43,157 @@ body {
   color: var(--color-stone-900);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
+}
+
+/* ponytail: shared control vocabulary for the signed-in app, one place instead of repeated utility strings */
+@layer components {
+  .app {
+    font-family: var(--font-ui);
+    background: var(--color-ground);
+    color: var(--color-ink-900);
+    caret-color: var(--color-vermilion-600);
+    scrollbar-color: var(--color-ink-300) transparent;
+  }
+  .app ::selection {
+    background: var(--color-ink-900);
+    color: #fff;
+  }
+  .app :focus-visible {
+    outline: 2px solid var(--color-vermilion-600);
+    outline-offset: 2px;
+  }
+  .app a {
+    text-underline-offset: 3px;
+  }
+
+  .code {
+    font-family: var(--font-code);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.01em;
+  }
+
+  .panel {
+    margin-top: 1.25rem;
+    border: 1px solid var(--color-ink-200);
+    border-radius: 4px;
+    background: #fff;
+    padding: 1.25rem 1.5rem;
+  }
+  .panel-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--color-ink-950);
+  }
+  .hint {
+    font-size: 0.8125rem;
+    color: var(--color-ink-600);
+  }
+  .label {
+    display: block;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--color-ink-800);
+  }
+  .field {
+    display: block;
+    width: 100%;
+    min-height: 2.5rem;
+    border: 1px solid var(--color-ink-300);
+    border-radius: 4px;
+    background: #fff;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+    color: var(--color-ink-950);
+    transition: border-color 120ms ease-out, box-shadow 120ms ease-out;
+  }
+  .field:hover {
+    border-color: var(--color-ink-500);
+  }
+  .field:focus-visible {
+    outline: none;
+    border-color: var(--color-ink-900);
+    box-shadow: 0 0 0 3px rgb(196 56 31 / 0.22);
+  }
+  .field:disabled {
+    background: var(--color-ink-50);
+    color: var(--color-ink-500);
+  }
+  .subfield {
+    border-radius: 4px;
+    background: var(--color-ink-50);
+    padding: 0.75rem 1rem 1rem;
+  }
+  .subfield > legend {
+    float: left;
+    width: 100%;
+    margin-bottom: 0.25rem;
+    font-size: 0.8125rem;
+    font-weight: 600;
+  }
+
+  .btn {
+    display: inline-flex;
+    min-height: 2.25rem;
+    align-items: center;
+    justify-content: center;
+    gap: 0.375rem;
+    border: 1px solid var(--color-ink-300);
+    border-radius: 4px;
+    background: #fff;
+    padding: 0.375rem 0.875rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--color-ink-900);
+    transition: background-color 120ms ease-out, border-color 120ms ease-out;
+  }
+  .btn:hover:not(:disabled) {
+    border-color: var(--color-ink-600);
+    background: var(--color-ink-50);
+  }
+  .btn-primary {
+    border-color: var(--color-vermilion-600);
+    background: var(--color-vermilion-600);
+    color: #fff;
+    font-weight: 600;
+  }
+  .btn-primary:hover:not(:disabled) {
+    border-color: var(--color-vermilion-700);
+    background: var(--color-vermilion-700);
+  }
+  .btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+  fieldset:disabled .btn {
+    cursor: wait;
+  }
+
+  .note-error {
+    font-size: 0.875rem;
+    color: var(--color-vermilion-700);
+  }
+  .note-ok {
+    font-size: 0.875rem;
+    color: var(--color-scan-700);
+  }
+  .banner-error,
+  .banner-ok {
+    border-radius: 4px;
+    padding: 0.625rem 0.875rem;
+    font-size: 0.875rem;
+  }
+  .banner-error {
+    background: var(--color-vermilion-50);
+    color: var(--color-vermilion-700);
+  }
+  .banner-ok {
+    background: var(--color-scan-50);
+    color: var(--color-scan-700);
+  }
+  .record + .record {
+    border-top: 1px solid var(--color-ink-100);
+  }
+  .record {
+    padding: 1rem 0;
+  }
 }

@@ -368,7 +368,7 @@ describe('equipment guardrails', () => {
     expect(events).toBe(1)
     release()
     await flushPromises()
-    expect(wrapper.text()).toContain('waiting_equipment_approval')
+    expect(wrapper.text()).toContain('รออนุมัติอุปกรณ์')
     expect(wrapper.find('form[aria-label="บันทึกการซ่อม"]').exists()).toBe(false)
     expect(events).toBe(2)
   })

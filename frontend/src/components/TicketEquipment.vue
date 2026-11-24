@@ -16,7 +16,7 @@ import {
 } from '@/services/tickets'
 const props = defineProps<{ ticket: Ticket }>()
 const busy = defineModel<boolean>('busy', { required: true })
-const emit = defineEmits<{ updated: [ticket: Ticket] }>()
+const emit = defineEmits<{ updated: [ticket: Ticket]; loaded: [requests: EquipmentRequest[]] }>()
 const auth = useAuthStore()
 type ListState =
   | { kind: 'loading'; page: number }
@@ -108,7 +108,11 @@ async function load(page: number) {
   list.value = { kind: 'loading', page }
   try {
     const result = await listEquipmentRequests(id, page)
-    if (context === revision && current === listRevision) list.value = { kind: 'ready', result }
+    if (context === revision && current === listRevision) {
+      list.value = { kind: 'ready', result }
+      emit('loaded', result.data)
+      emit('loaded', result.data)
+    }
   } catch (error) {
     if (context === revision && current === listRevision)
       list.value = { kind: 'error', page, message: errorMessage(error) }
@@ -137,6 +141,7 @@ async function refreshAfterWrite(context = revision) {
     if (context !== revision) return
     listRevision++
     list.value = { kind: 'ready', result }
+    emit('loaded', result.data)
     resetDraft()
     mutation.value = { kind: 'idle' }
     feedback.value = { type: 'success', message: 'บันทึกสำเร็จแล้ว และอัปเดตสถานะล่าสุดแล้ว' }
@@ -223,19 +228,17 @@ const statuses: Record<EquipmentStatus, string> = {
 }
 </script>
 <template>
-  <section v-if="canView" aria-label="คำขออุปกรณ์" class="mt-8 border-t border-stone-200 pt-6">
-    <h2 class="text-lg font-semibold">อุปกรณ์และอะไหล่ที่ขอ</h2>
-    <p class="mt-2 text-sm text-stone-600">
-      การอนุมัติเป็นการอนุญาตให้จัดหา ยังไม่ใช่การบันทึกอะไหล่ที่ใช้จริงหรือปิดงาน
-    </p>
+  <section v-if="canView" aria-label="คำขออุปกรณ์" class="panel">
+    <h2 class="panel-title">อุปกรณ์และอะไหล่ที่ขอ</h2>
+    <p class="hint mt-1">การอนุมัติเป็นการอนุญาตให้จัดหา ยังไม่ใช่การบันทึกอะไหล่ที่ใช้จริงหรือปิดงาน</p>
     <p v-if="list.kind === 'loading'" role="status" class="mt-3 text-sm">กำลังโหลดคำขออุปกรณ์...</p>
     <div v-else-if="list.kind === 'error'" class="mt-3">
-      <p role="alert" class="text-sm text-red-700">{{ list.message }}</p>
+      <p role="alert" class="note-error">{{ list.message }}</p>
       <button
         data-test="equipment-reload"
         type="button"
         :disabled="busy"
-        class="mt-2 border px-3 py-2 text-sm disabled:opacity-50"
+        class="btn mt-2"
         @click="load(list.page)"
       >
         โหลดรายการอีกครั้ง
@@ -243,12 +246,18 @@ const statuses: Record<EquipmentStatus, string> = {
     </div>
     <template v-else>
       <p v-if="!list.result.data.length" class="mt-3 text-sm">ยังไม่มีคำขออุปกรณ์ในหน้านี้</p>
-      <article
-        v-for="request in list.result.data"
-        :key="request.id"
-        class="mt-4 border border-stone-200 p-4"
-      >
-        <h3 class="font-medium">คำขอ #{{ request.id }} · {{ statuses[request.status] }}</h3>
+      <article v-for="request in list.result.data" :key="request.id" class="record">
+        <h3 class="text-sm font-semibold text-ink-950">
+          <span class="code">คำขอ #{{ request.id }}</span> ·
+          <span
+            :class="{
+              'text-kraft-700': request.status === 'pending',
+              'text-scan-700': request.status === 'approved',
+              'text-vermilion-700': request.status === 'rejected',
+            }"
+            >{{ statuses[request.status] }}</span
+          >
+        </h3>
         <p v-if="request.reason !== undefined" class="mt-2 whitespace-pre-line text-sm">
           เหตุผล: {{ request.reason }}
         </p>
@@ -272,7 +281,7 @@ const statuses: Record<EquipmentStatus, string> = {
           เหตุผลการพิจารณา: {{ request.decision_reason }}
         </p>
         <fieldset v-if="canDecide(request)" :disabled="busy" class="mt-3 space-y-2">
-          <label :for="`equipment-decision-${request.id}`" class="block text-sm"
+          <label :for="`equipment-decision-${request.id}`" class="label"
             >เหตุผลการพิจารณา (จำเป็นเมื่อปฏิเสธ)</label
           >
           <textarea
@@ -280,13 +289,13 @@ const statuses: Record<EquipmentStatus, string> = {
             v-model="decisionReasons[request.id]"
             maxlength="2000"
             rows="3"
-            class="block w-full border border-stone-300 p-2 text-sm"
+            class="field"
           ></textarea>
           <div class="flex gap-2">
             <button
               :data-test="`equipment-approved-${request.id}`"
               type="button"
-              class="border bg-stone-900 px-3 py-2 text-sm text-white disabled:opacity-50"
+              class="btn btn-primary"
               @click="decide(request, 'approved')"
             >
               อนุมัติอุปกรณ์
@@ -294,7 +303,7 @@ const statuses: Record<EquipmentStatus, string> = {
             <button
               :data-test="`equipment-rejected-${request.id}`"
               type="button"
-              class="border px-3 py-2 text-sm disabled:opacity-50"
+              class="btn"
               @click="decide(request, 'rejected')"
             >
               ปฏิเสธอุปกรณ์
@@ -310,7 +319,7 @@ const statuses: Record<EquipmentStatus, string> = {
         <button
           type="button"
           :disabled="busy || list.result.meta.current_page <= 1"
-          class="border px-3 py-2 disabled:opacity-50"
+          class="btn"
           @click="load(list.result.meta.current_page - 1)"
         >
           ก่อนหน้า
@@ -320,7 +329,7 @@ const statuses: Record<EquipmentStatus, string> = {
           data-test="equipment-next"
           type="button"
           :disabled="busy || list.result.meta.current_page >= list.result.meta.last_page"
-          class="border px-3 py-2 disabled:opacity-50"
+          class="btn"
           @click="load(list.result.meta.current_page + 1)"
         >
           ถัดไป
@@ -328,32 +337,30 @@ const statuses: Record<EquipmentStatus, string> = {
       </nav>
     </template>
     <form v-if="canCreate" aria-label="ขออุปกรณ์" class="mt-5 space-y-3" @submit.prevent="create">
-      <h3 class="font-medium">ร้องขออุปกรณ์หรืออะไหล่</h3>
+      <h3 class="border-t border-ink-100 pt-4 text-sm font-semibold text-ink-950">
+        ร้องขออุปกรณ์หรืออะไหล่
+      </h3>
       <fieldset :disabled="busy" class="space-y-3">
-        <label for="equipment-reason" class="block text-sm">เหตุผลที่ต้องใช้</label>
+        <label for="equipment-reason" class="label">เหตุผลที่ต้องใช้</label>
         <textarea
           id="equipment-reason"
           v-model="reason"
           required
           maxlength="5000"
           rows="3"
-          class="block w-full border border-stone-300 p-2 text-sm"
+          class="field"
         ></textarea>
-        <fieldset
-          v-for="(item, index) in items"
-          :key="index"
-          class="space-y-2 border border-stone-200 p-3"
-        >
+        <fieldset v-for="(item, index) in items" :key="index" class="subfield space-y-2">
           <legend class="text-sm">รายการที่ {{ index + 1 }}</legend>
-          <label :for="`equipment-name-${index}`" class="block text-sm">ชื่ออุปกรณ์</label>
+          <label :for="`equipment-name-${index}`" class="label">ชื่ออุปกรณ์</label>
           <input
             :id="`equipment-name-${index}`"
             v-model="item.name"
             required
             maxlength="200"
-            class="block w-full border border-stone-300 p-2 text-sm"
+            class="field"
           />
-          <label :for="`equipment-quantity-${index}`" class="block text-sm">จำนวน</label>
+          <label :for="`equipment-quantity-${index}`" class="label">จำนวน</label>
           <input
             :id="`equipment-quantity-${index}`"
             v-model.number="item.quantity"
@@ -362,49 +369,44 @@ const statuses: Record<EquipmentStatus, string> = {
             min="1"
             max="1000"
             step="1"
-            class="block w-full border border-stone-300 p-2 text-sm"
+            class="field"
           />
-          <label :for="`equipment-price-${index}`" class="block text-sm"
-            >ราคาประมาณต่อหน่วย (บาท)</label
-          >
+          <label :for="`equipment-price-${index}`" class="label">ราคาประมาณต่อหน่วย (บาท)</label>
           <input
             :id="`equipment-price-${index}`"
             v-model="item.estimated_unit_price"
             type="text"
             inputmode="decimal"
             required
-            class="block w-full border border-stone-300 p-2 text-sm"
+            class="field"
           />
           <button
             type="button"
             :disabled="items.length <= 1"
-            class="border px-3 py-2 text-sm disabled:opacity-50"
+            class="btn"
             @click="items.splice(index, 1)"
           >
             ลบรายการที่ {{ index + 1 }}
           </button>
         </fieldset>
-        <button
-          type="button"
-          :disabled="items.length >= 20"
-          class="border px-3 py-2 text-sm disabled:opacity-50"
-          @click="items.push({ name: '', quantity: 1, estimated_unit_price: '' })"
-        >
-          เพิ่มรายการ (สูงสุด 20)
-        </button>
-        <button
-          type="submit"
-          class="ml-2 border bg-stone-900 px-3 py-2 text-sm text-white disabled:opacity-50"
-        >
-          ส่งคำขออุปกรณ์
-        </button>
+        <div class="flex flex-wrap gap-2">
+          <button
+            type="button"
+            :disabled="items.length >= 20"
+            class="btn"
+            @click="items.push({ name: '', quantity: 1, estimated_unit_price: '' })"
+          >
+            เพิ่มรายการ (สูงสุด 20)
+          </button>
+          <button type="submit" class="btn">ส่งคำขออุปกรณ์</button>
+        </div>
       </fieldset>
     </form>
     <p
       v-if="feedback"
       :role="feedback.type === 'error' ? 'alert' : 'status'"
       class="mt-3 whitespace-pre-line text-sm"
-      :class="feedback.type === 'error' ? 'text-red-700' : 'text-green-800'"
+      :class="feedback.type === 'error' ? 'note-error' : 'note-ok'"
     >
       {{ feedback.message }}
     </p>
@@ -416,13 +418,8 @@ const statuses: Record<EquipmentStatus, string> = {
       {{ mutation.kind === 'posting' ? 'กำลังบันทึก...' : 'บันทึกสำเร็จแล้ว กำลังโหลดสถานะล่าสุด...' }}
     </p>
     <div v-if="mutation.kind === 'refresh-error'" class="mt-3 space-y-2">
-      <p role="alert" class="text-sm text-red-700">{{ mutation.message }}</p>
-      <button
-        data-test="equipment-refresh"
-        type="button"
-        class="border px-3 py-2 text-sm"
-        @click="refreshAfterWrite()"
-      >
+      <p role="alert" class="note-error">{{ mutation.message }}</p>
+      <button data-test="equipment-refresh" type="button" class="btn" @click="refreshAfterWrite()">
         โหลดสถานะล่าสุดอีกครั้ง (ไม่ส่งคำขอซ้ำ)
       </button>
     </div>

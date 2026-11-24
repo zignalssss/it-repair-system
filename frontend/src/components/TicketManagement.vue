@@ -3,6 +3,8 @@ import { computed, onUnmounted, ref, watch } from 'vue'
 import { isAxiosError } from 'axios'
 import { useAuthStore } from '@/stores/auth'
 import { errorMessage } from '@/lib/http'
+import { roleLabels } from '@/lib/ticketLabels'
+import type { UserRole } from '@/services/auth'
 import {
   assignTicket,
   listTechnicians,
@@ -131,39 +133,29 @@ async function savePriority() {
 }
 </script>
 <template>
-  <section v-if="canManage" class="mt-8 border-t border-stone-200 pt-6" aria-label="จัดการใบงาน">
-    <h2 class="text-lg font-semibold">จัดการใบงานโดย Manager</h2>
-    <p class="mt-2 text-sm text-stone-600">
-      การมอบหมายเปลี่ยนช่างและระดับตามบทบาทของช่าง สถานะและคำขอที่กำลังรอยังคงเดิม
-    </p>
+  <section v-if="canManage" class="panel" aria-label="จัดการใบงาน">
+    <h2 class="panel-title">จัดการใบงาน (ผู้จัดการ)</h2>
+    <p class="hint mt-1">การมอบหมายเปลี่ยนช่างและระดับตามบทบาทของช่าง สถานะและคำขอที่กำลังรอยังคงเดิม</p>
     <form aria-label="มอบหมายงาน" class="mt-4 space-y-3" @submit.prevent="assign">
       <fieldset :disabled="busy" class="space-y-3">
         <p v-if="technicians.kind === 'loading'" role="status">กำลังโหลดรายชื่อช่าง...</p>
         <div v-else-if="technicians.kind === 'error'">
-          <p role="alert" class="text-sm text-red-700">{{ technicians.message }}</p>
-          <button
-            type="button"
-            class="mt-2 border px-3 py-2 text-sm"
-            @click="load(technicians.page)"
-          >
+          <p role="alert" class="note-error">{{ technicians.message }}</p>
+          <button type="button" class="btn mt-2" @click="load(technicians.page)">
             โหลดรายชื่ออีกครั้ง
           </button>
         </div>
         <template v-else>
-          <label for="assignment-technician" class="block text-sm">ช่างผู้รับผิดชอบ</label>
-          <select
-            id="assignment-technician"
-            v-model="selected"
-            required
-            class="block w-full border border-stone-300 p-2 text-sm"
-          >
+          <label for="assignment-technician" class="label">ช่างผู้รับผิดชอบ</label>
+          <select id="assignment-technician" v-model="selected" required class="field">
             <option value="">เลือกช่างในหน้านี้</option>
             <option
               v-for="technician in technicians.result.data"
               :key="technician.id"
               :value="String(technician.id)"
             >
-              {{ technician.name }} · {{ technician.role }}
+              {{ technician.name }} ·
+              {{ roleLabels[technician.role as UserRole] ?? technician.role }}
             </option>
           </select>
           <p v-if="!technicians.result.data.length" class="text-sm">ไม่มีช่างในหน้านี้</p>
@@ -175,7 +167,7 @@ async function savePriority() {
             <button
               type="button"
               :disabled="technicians.result.meta.current_page <= 1"
-              class="border px-3 py-2 disabled:opacity-50"
+              class="btn"
               @click="load(technicians.result.meta.current_page - 1)"
             >
               ก่อนหน้า
@@ -188,48 +180,52 @@ async function savePriority() {
               type="button"
               data-test="technicians-next"
               :disabled="technicians.result.meta.current_page >= technicians.result.meta.last_page"
-              class="border px-3 py-2 disabled:opacity-50"
+              class="btn"
               @click="load(technicians.result.meta.current_page + 1)"
             >
               ถัดไป
             </button>
           </nav>
         </template>
-        <label for="assignment-reason" class="block text-sm">เหตุผลการมอบหมาย (ไม่บังคับ)</label>
+        <label for="assignment-reason" class="label">เหตุผลการมอบหมาย (ไม่บังคับ)</label>
         <textarea
           id="assignment-reason"
           v-model="reason"
           maxlength="2000"
           rows="3"
-          class="block w-full border border-stone-300 p-2 text-sm"
+          class="field"
         ></textarea>
         <button
           type="submit"
           :disabled="technicians.kind !== 'ready' || !selected"
-          class="border bg-stone-900 px-3 py-2 text-sm text-white disabled:opacity-50"
+          class="btn btn-primary"
         >
           มอบหมายงาน
         </button>
       </fieldset>
     </form>
-    <form aria-label="ความเร่งด่วน" class="mt-6 space-y-3" @submit.prevent="savePriority">
+    <form
+      aria-label="ความเร่งด่วน"
+      class="mt-6 space-y-3 border-t border-ink-100 pt-5"
+      @submit.prevent="savePriority"
+    >
       <fieldset :disabled="busy" class="space-y-3">
-        <label for="ticket-priority" class="block text-sm">ความเร่งด่วน</label>
-        <select id="ticket-priority" v-model="priority" class="border border-stone-300 p-2 text-sm">
-          <option value="normal">ปกติ</option>
-          <option value="high">สูง</option>
-          <option value="critical">วิกฤต</option>
-        </select>
-        <button type="submit" class="ml-2 border px-3 py-2 text-sm disabled:opacity-50">
-          บันทึกความเร่งด่วน
-        </button>
+        <label for="ticket-priority" class="label">ความเร่งด่วน</label>
+        <div class="flex flex-wrap items-center gap-2">
+          <select id="ticket-priority" v-model="priority" class="field w-auto">
+            <option value="normal">ปกติ</option>
+            <option value="high">สูง</option>
+            <option value="critical">วิกฤต</option>
+          </select>
+          <button type="submit" class="btn">บันทึกความเร่งด่วน</button>
+        </div>
       </fieldset>
     </form>
     <p
       v-if="feedback"
       :role="feedback.kind === 'error' ? 'alert' : 'status'"
       class="mt-3 whitespace-pre-line text-sm"
-      :class="feedback.kind === 'error' ? 'text-red-700' : 'text-green-800'"
+      :class="feedback.kind === 'error' ? 'note-error' : 'note-ok'"
     >
       {{ feedback.message }}
     </p>

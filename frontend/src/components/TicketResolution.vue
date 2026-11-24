@@ -129,26 +129,24 @@ async function submit() {
 }
 </script>
 <template>
-  <section v-if="canResolve" class="mt-8 border-t border-stone-200 pt-6" aria-label="ปิดงานซ่อม">
-    <h2 class="text-lg font-semibold">แก้ไขเสร็จสิ้น</h2>
-    <p class="mt-2 text-sm text-stone-600">
-      บันทึกสรุปให้ผู้แจ้งอ่านได้ และระบุเฉพาะอะไหล่ที่ใช้จริง ปิดงานโดยไม่มีอะไหล่ได้
-    </p>
+  <section v-if="canResolve" class="panel" aria-label="ปิดงานซ่อม">
+    <h2 class="panel-title">แก้ไขเสร็จสิ้น</h2>
+    <p class="hint mt-1">บันทึกสรุปให้ผู้แจ้งอ่านได้ และระบุเฉพาะอะไหล่ที่ใช้จริง ปิดงานโดยไม่มีอะไหล่ได้</p>
     <form aria-label="ปิดงานซ่อม" class="mt-4 space-y-3" @submit.prevent="submit">
       <fieldset :disabled="busy" class="space-y-3">
-        <label for="resolution-summary" class="block text-sm">สรุปการแก้ไข</label>
+        <label for="resolution-summary" class="label">สรุปการแก้ไข</label>
         <textarea
           id="resolution-summary"
           v-model="summary"
           required
           maxlength="10000"
           rows="4"
-          class="block w-full border border-stone-300 p-2"
+          class="field"
         ></textarea>
         <p v-if="lookup.kind === 'loading'" role="status" class="text-sm">กำลังโหลดอุปกรณ์ที่อนุมัติ...</p>
         <div v-else-if="lookup.kind === 'error'" class="text-sm">
           <p>โหลดอุปกรณ์ที่อนุมัติไม่สำเร็จ: {{ lookup.message }} ยังปิดงานโดยไม่อ้างอิงรายการได้</p>
-          <button type="button" class="mt-2 border px-3 py-2" @click="loadApproved(lookup.page)">
+          <button type="button" class="btn mt-2" @click="loadApproved(lookup.page)">
             ลองโหลดอุปกรณ์อีกครั้ง
           </button>
         </div>
@@ -158,41 +156,31 @@ async function submit() {
             v-if="lookup.page < lookup.last"
             type="button"
             data-test="approved-more"
-            class="border px-3 py-2 text-sm"
+            class="btn"
             @click="loadApproved(lookup.page + 1)"
           >
             โหลดอุปกรณ์ที่อนุมัติเพิ่ม
           </button>
         </template>
-        <fieldset
-          v-for="(part, index) in parts"
-          :key="index"
-          class="space-y-2 border border-stone-200 p-3"
-        >
+        <fieldset v-for="(part, index) in parts" :key="index" class="subfield space-y-2">
           <legend class="text-sm">อะไหล่ใช้จริง {{ index + 1 }}</legend>
-          <label :for="`part-source-${index}`" class="block text-sm">อ้างอิงรายการอนุมัติ</label>
-          <select
-            :id="`part-source-${index}`"
-            v-model="part.source"
-            class="block w-full border border-stone-300 p-2 text-sm"
-          >
+          <label :for="`part-source-${index}`" class="label">อ้างอิงรายการอนุมัติ</label>
+          <select :id="`part-source-${index}`" v-model="part.source" class="field">
             <option value="">อะไหล่อื่นที่ไม่ได้อ้างอิงคำขอ</option>
             <option v-for="item in approvedItems" :key="item.id" :value="String(item.id)">
               {{ item.name }} · อนุมัติ {{ item.quantity }}
             </option>
           </select>
-          <label v-if="!part.source" :for="`part-name-${index}`" class="block text-sm"
-            >ชื่ออะไหล่</label
-          >
+          <label v-if="!part.source" :for="`part-name-${index}`" class="label">ชื่ออะไหล่</label>
           <input
             v-if="!part.source"
             :id="`part-name-${index}`"
             v-model="part.name"
             required
             maxlength="200"
-            class="block w-full border border-stone-300 p-2 text-sm"
+            class="field"
           />
-          <label :for="`part-quantity-${index}`" class="block text-sm">จำนวนที่ใช้</label>
+          <label :for="`part-quantity-${index}`" class="label">จำนวนที่ใช้</label>
           <input
             :id="`part-quantity-${index}`"
             v-model.number="part.quantity"
@@ -201,29 +189,28 @@ async function submit() {
             max="1000"
             step="1"
             required
-            class="block w-full border border-stone-300 p-2 text-sm"
+            class="field"
           />
-          <button type="button" class="border px-3 py-2 text-sm" @click="parts.splice(index, 1)">
+          <button type="button" class="btn" @click="parts.splice(index, 1)">
             ลบอะไหล่ {{ index + 1 }}
           </button>
         </fieldset>
-        <button
-          type="button"
-          data-test="add-part"
-          :disabled="parts.length >= 50"
-          class="border px-3 py-2 text-sm disabled:opacity-50"
-          @click="parts.push({ source: '', name: '', quantity: 1 })"
-        >
-          เพิ่มอะไหล่ใช้จริง (สูงสุด 50)
-        </button>
-        <button
-          type="submit"
-          class="ml-2 border bg-stone-900 px-3 py-2 text-sm text-white disabled:opacity-50"
-        >
-          {{ busy ? 'กำลังบันทึก...' : 'ยืนยันแก้ไขเสร็จสิ้น' }}
-        </button>
+        <div class="flex flex-wrap gap-2">
+          <button
+            type="button"
+            data-test="add-part"
+            :disabled="parts.length >= 50"
+            class="btn"
+            @click="parts.push({ source: '', name: '', quantity: 1 })"
+          >
+            เพิ่มอะไหล่ใช้จริง (สูงสุด 50)
+          </button>
+          <button type="submit" class="btn">
+            {{ busy ? 'กำลังบันทึก...' : 'ยืนยันแก้ไขเสร็จสิ้น' }}
+          </button>
+        </div>
       </fieldset>
-      <p v-if="feedback" role="alert" class="whitespace-pre-line text-sm text-red-700">
+      <p v-if="feedback" role="alert" class="note-error whitespace-pre-line">
         {{ feedback }}
       </p>
     </form>

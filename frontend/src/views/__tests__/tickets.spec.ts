@@ -142,7 +142,7 @@ describe('ticket detail', () => {
     expect(claim, 'Assigned technician needs a claim button').toBeDefined()
     await claim?.trigger('click')
     await flushPromises()
-    expect(wrapper.text()).toContain('in_progress')
+    expect(wrapper.text()).toContain('กำลังดำเนินการ')
     expect(wrapper.findAll('button').some((button) => button.text() === 'รับงาน')).toBe(false)
   })
 

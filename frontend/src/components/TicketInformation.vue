@@ -21,7 +21,8 @@ const feedback = ref<{ type: 'success' | 'error'; message: string } | null>(null
 let revision = 0
 let ownedRequest: number | null = null
 
-type FormMode ={ kind: 'ask' } | { kind: 'respond'; request: PendingInformationRequest } | { kind: 'readonly' }
+type FormMode =
+  { kind: 'ask' } | { kind: 'respond'; request: PendingInformationRequest } | { kind: 'readonly' }
 const pending = computed(() => props.ticket.pending_information_request)
 const mode = computed<FormMode>(() => {
   const user = auth.user
@@ -142,23 +143,22 @@ async function submit() {
 <template>
   <section
     v-if="mode.kind !== 'readonly' || pending || feedback"
-    class="mt-8 border-t border-stone-200 pt-6"
+    class="panel"
     aria-label="ข้อมูลเพิ่มเติม"
   >
-    <div v-if="pending && ticket.status === 'waiting_info'" class="space-y-2">
-      <h2 class="text-lg font-semibold">รอข้อมูลเพิ่มเติม</h2>
-      <p class="text-sm text-stone-600">
-        {{ pending.question.author?.name ?? 'ช่างผู้รับผิดชอบ' }} ขอข้อมูลเพิ่มเติม
-      </p>
-      <p class="whitespace-pre-line text-sm">{{ pending.question.body }}</p>
-      <p v-if="mode.kind === 'readonly'" class="text-sm text-stone-600">
-        รอเจ้าของใบแจ้งซ่อมส่งข้อมูลเพิ่มเติม
-      </p>
+    <div
+      v-if="pending && ticket.status === 'waiting_info'"
+      class="space-y-2 rounded bg-kraft-50 p-4 text-kraft-700"
+    >
+      <h2 class="panel-title">รอข้อมูลเพิ่มเติม</h2>
+      <p class="hint">{{ pending.question.author?.name ?? 'ช่างผู้รับผิดชอบ' }} ขอข้อมูลเพิ่มเติม</p>
+      <p class="whitespace-pre-line text-sm text-ink-950">{{ pending.question.body }}</p>
+      <p v-if="mode.kind === 'readonly'" class="hint">รอเจ้าของใบแจ้งซ่อมส่งข้อมูลเพิ่มเติม</p>
     </div>
     <form v-if="mode.kind === 'ask'" aria-label="ขอข้อมูลเพิ่มเติม" @submit.prevent="submit">
-      <h2 class="text-lg font-semibold">ขอข้อมูลเพิ่มเติม</h2>
+      <h2 class="panel-title">ขอข้อมูลเพิ่มเติม</h2>
       <fieldset :disabled="busy" class="mt-4 space-y-3">
-        <label for="info-question-body" class="block text-sm font-medium">ข้อมูลที่ต้องการเพิ่มเติม</label>
+        <label for="info-question-body" class="label">ข้อมูลที่ต้องการเพิ่มเติม</label>
         <textarea
           id="info-question-body"
           v-model="body"
@@ -166,12 +166,9 @@ async function submit() {
           maxlength="10000"
           rows="4"
           :aria-describedby="feedback ? 'info-feedback' : undefined"
-          class="block w-full border border-stone-300 p-2 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-60"
+          class="field"
         ></textarea>
-        <button
-          type="submit"
-          class="border bg-stone-900 px-4 py-2 text-sm text-white focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-50"
-        >
+        <button type="submit" class="btn">
           {{ busy ? 'กำลังส่ง...' : 'ขอข้อมูลเพิ่มเติม' }}
         </button>
       </fieldset>
@@ -182,19 +179,19 @@ async function submit() {
       aria-label="ตอบข้อมูลเพิ่มเติม"
       @submit.prevent="submit"
     >
-      <h3 class="font-medium">ตอบข้อมูลเพิ่มเติม</h3>
+      <h3 class="text-sm font-semibold text-ink-950">ตอบข้อมูลเพิ่มเติม</h3>
       <fieldset :disabled="busy" class="mt-3 space-y-3">
-        <label for="info-response-body" class="block text-sm font-medium">ข้อมูลเพิ่มเติม</label>
+        <label for="info-response-body" class="label">ข้อมูลเพิ่มเติม</label>
         <textarea
           id="info-response-body"
           v-model="body"
           maxlength="10000"
           rows="4"
           :aria-describedby="feedback ? 'info-feedback' : undefined"
-          class="block w-full border border-stone-300 p-2 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-60"
+          class="field"
         ></textarea>
-        <label for="info-response-files" class="block text-sm font-medium">ไฟล์แนบ</label>
-        <p class="text-xs text-stone-600">
+        <label for="info-response-files" class="label">ไฟล์แนบ</label>
+        <p class="hint">
           กรอกข้อความหรือแนบไฟล์ สูงสุด 3 ไฟล์ ไฟล์ละไม่เกิน 2 MB รองรับ JPG, PNG, WebP, PDF, MP4 และ WebM
         </p>
         <input
@@ -203,27 +200,23 @@ async function submit() {
           type="file"
           multiple
           accept=".jpg,.jpeg,.png,.webp,.pdf,.mp4,.webm"
-          class="block w-full text-sm focus-visible:outline-2 focus-visible:outline-offset-2"
+          class="peer sr-only"
           @change="pickFiles"
         />
+        <label
+          for="info-response-files"
+          class="btn mt-2 cursor-pointer peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-vermilion-600"
+        >
+          เลือกไฟล์
+        </label>
         <ul v-if="files.length" class="space-y-1 text-sm">
           <li v-for="(file, index) in files" :key="index" class="break-all">
             {{ file.name }} · {{ Math.ceil(file.size / 1024) }} KB
           </li>
         </ul>
-        <button
-          v-if="files.length"
-          type="button"
-          class="border px-3 py-1 text-sm focus-visible:outline-2 focus-visible:outline-offset-2"
-          @click="clearFiles"
-        >
-          ล้างไฟล์แนบ
-        </button>
+        <button v-if="files.length" type="button" class="btn" @click="clearFiles">ล้างไฟล์แนบ</button>
         <div>
-          <button
-            type="submit"
-            class="border bg-stone-900 px-4 py-2 text-sm text-white focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-50"
-          >
+          <button type="submit" class="btn btn-primary">
             {{ busy ? 'กำลังส่ง...' : 'ตอบข้อมูลเพิ่มเติม' }}
           </button>
         </div>
@@ -233,7 +226,7 @@ async function submit() {
       v-if="feedback"
       id="info-feedback"
       :role="feedback.type === 'error' ? 'alert' : 'status'"
-      :class="feedback.type === 'error' ? 'text-red-700' : 'text-green-800'"
+      :class="feedback.type === 'error' ? 'note-error' : 'note-ok'"
       class="mt-3 text-sm"
     >
       {{ feedback.message }}
